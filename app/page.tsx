@@ -111,16 +111,7 @@ export default function App() {
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
         </main>
 
-        <footer className="mt-2 pt-4 flex justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-[var(--ock-text-foreground-muted)] text-xs"
-            onClick={() => openUrl("https://base.org/builders/minikit")}
-          >
-            Built on Base with MiniKit
-          </Button>
-        </footer>
+        {/* Footer removed as requested */}
       </div>
     </div>
   );
