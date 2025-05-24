@@ -19,8 +19,8 @@ export async function GET(request: Request) {
   return Response.json({
     accountAssociation: {
       "header": "eyJmaWQiOjc0NzIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzRjE2ODZlNEI1Yjg2NjdEQzY1RTMzQzMxZDVBYTg2NzcxNzhGZDRBIn0",
-      "payload": "eyJkb21haW4iOiJ3d3cubG90ZXJpYWdhbWUueHl6In0",
-      "signature": "MHpjM0pON00zNTc4YmM4MzUyZTc3NGQwZTc0YjBiMTQyMTQzZjQ2YmJiOWVkZDg4MWU0ODExZGFjMGM4N2IxNWNiNWYzYWNlNzQxNGJlNGRmNGEzYWI5MzNlMTAzODE5NDg4YzRmYmI2OGNjM2MyNDk3MmI2ZWJhMzBlOTAzYWRhZTFi"
+      "payload": "eyJkb21haW4iOiJsb3RlcmlhZ2FtZS54eXoifQ",
+      "signature": "MHg3MjQ0ODZkYzc4YmNjMzUyZTc3NGQwZTc0YjBiMTQyMTQzZjQ2YmJiOWVkZDg4MWU0ODExZGFjMGM4N2IxNWNiNWYzYWNlNzQxNGJlNGRmNGEzYWI5MzNlMTAzODE5NDg4YzRmYmI2OGNjM2MyNDk3MmI2ZWJhMzBlOTAzYWRhZTFi"
     },
     frame: {
       "version": "1",
