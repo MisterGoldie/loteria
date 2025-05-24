@@ -15,7 +15,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://*.farcaster.xyz https://*.warpcast.com https://*.coinbase.com https://*.base.org https://*.merkle.io https://*.privy.io https://*.privy.systems https://cloudflareinsights.com *; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; frame-ancestors 'self' *.farcaster.xyz farcaster.xyz *.warpcast.com warpcast.com *.coinbase.com coinbase.com *.base.org *.merkle.io godaddy.com *.godaddy.com; worker-src * blob:;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' https://*.walletconnect.com https://explorer-api.walletconnect.com https://*.coinbase.com https://farcaster.xyz https://client.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wrpcd.net https://*.wrpcd.net https://privy.farcaster.xyz https://privy.warpcast.com https://auth.privy.io https://*.rpc.privy.systems https://cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; frame-ancestors 'self' *.farcaster.xyz farcaster.xyz *.warpcast.com warpcast.com *.coinbase.com coinbase.com godaddy.com *.godaddy.com; form-action 'self';",
           },
           {
             key: 'X-Frame-Options',
