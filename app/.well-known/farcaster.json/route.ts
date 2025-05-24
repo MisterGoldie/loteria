@@ -18,9 +18,9 @@ export async function GET(request: Request) {
   // Return the appropriate manifest with the correct domain
   return Response.json({
     accountAssociation: {
-      header: "eyJmaWQiOjc0NzIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzRjE2ODZlNEI1Yjg2NjdEQzY1RTMzQzMxZDVBYTg2NzcxNzhGZDRBIn0",
-      payload: "eyJkb21haW4iOiJ3d3cubG90ZXJpYWdhbWUueHl6In0",
-      signature: "MHg1YmQ4Yjc2MGRiYWJiMWMxM2NkOTliYmJkMzM2ZTQ1ZjlkYjMyZDI2NDVjYzM3OWNiNmZhYjMxNWRhODQwNzk2N2FmZjUwMGY3YmU2MTUwMGJjZjE2ZWY2MGU4MjYyYzg4ZjUzYmM5MWE3YjgyNjk3YzRiZTg1OWY4NTdlNDZkNTFi"
+      "header": "eyJmaWQiOjc0NzIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzRjE2ODZlNEI1Yjg2NjdEQzY1RTMzQzMxZDVBYTg2NzcxNzhGZDRBIn0",
+      "payload": "eyJkb21haW4iOiJ3d3cubG90ZXJpYWdhbWUueHl6In0",
+      "signature": "MHpjM0pON00zNTc4YmM4MzUyZTc3NGQwZTc0YjBiMTQyMTQzZjQ2YmJiOWVkZDg4MWU0ODExZGFjMGM4N2IxNWNiNWYzYWNlNzQxNGJlNGRmNGEzYWI5MzNlMTAzODE5NDg4YzRmYmI2OGNjM2MyNDk3MmI2ZWJhMzBlOTAzYWRhZTFi"
     },
     frame: {
       "version": "1",
