@@ -12,20 +12,23 @@ function withValidProperties(
 }
 
 export async function GET() {
-  // Using hardcoded values from the documentation example
+  // Using updated values from the user
   return Response.json({
     accountAssociation: {
       header: "eyJmaWQiOjc0NzIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzRjE2ODZlNEI1Yjg2NjdEQzY1RTMzQzMxZDVBYTg2NzcxNzhGZDRBIn0",
-      payload: "eyJkb21haW4iOiIyMTAxYjQ4OGUxZTUubmdyb2suYXBwIn0",
-      signature: "MHhjMjhiNzc5YTUyYjJmZjkyOTEyMmI3ODI5OTA3YzRmMmQzMTQ4ZTlkOWRiNjkwZjZmM2M4MmQ2M2QyMDg0YjE2MDFlOGE5NTMxOTI2MmE5ZDY0ZDA0MGYyMWU2YmMxYzNiZDZmMmYwODM2OWViNTU4ZTExMDhhZmIwYjBmZTA5YTFi"
+      payload: "eyJkb21haW4iOiJ3d3cubG90ZXJpYWdhbWUueHl6In0",
+      signature: "MHg1YmQ4Yjc2MGRiYWJiMWMxM2NkOTliYmJkMzM2ZTQ1ZjlkYjMyZDI2NDVjYzM3OWNiNmZhYjMxNWRhODQwNzk2N2FmZjUwMGY3YmU2MTUwMGJjZjE2ZWY2MGU4MjYyYzg4ZjUzYmM5MWE3YjgyNjk3YzRiZTg1OWY4NTdlNDZkNTFi"
     },
     frame: {
-      "version": "next",
+      "version": "1",
       "name": "Loteria",
-      "iconUrl": "https://loteriagame.xyz/fakeicon.png",
-      "splashImageUrl": "https://loteriagame.xyz/fakeicon.png",
-      "splashBackgroundColor": "#000000",
-      "homeUrl": "https://loteriagame.xyz"
+      "iconUrl": "https://loteriagame.xyz/icon.png",
+      "homeUrl": "https://loteriagame.xyz",
+      "imageUrl": "https://loteriagame.xyz/image.png",
+      "buttonTitle": "Play Loteria",
+      "splashImageUrl": "https://loteriagame.xyz/splash.png",
+      "splashBackgroundColor": "#eeccff",
+      "webhookUrl": "https://loteriagame.xyz/api/webhook"
     }
   });
 }

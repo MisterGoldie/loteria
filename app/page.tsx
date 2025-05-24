@@ -4,6 +4,10 @@ import {
   useMiniKit,
   useAddFrame,
   useOpenUrl,
+  useClose,
+  usePrimaryButton,
+  useViewProfile,
+  useNotification,
 } from "@coinbase/onchainkit/minikit";
 import {
   Name,
@@ -28,9 +32,13 @@ export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
+  const [notificationSent, setNotificationSent] = useState(false);
 
   const addFrame = useAddFrame();
   const openUrl = useOpenUrl();
+  const close = useClose();
+  const viewProfile = useViewProfile();
+  const sendNotification = useNotification();
 
   useEffect(() => {
     if (!isFrameReady) {
@@ -39,9 +47,31 @@ export default function App() {
   }, [setFrameReady, isFrameReady]);
 
   const handleAddFrame = useCallback(async () => {
-    const frameAdded = await addFrame();
-    setFrameAdded(Boolean(frameAdded));
+    const result = await addFrame();
+    if (result) {
+      console.log('Frame added:', result.url, result.token);
+      setFrameAdded(true);
+    }
   }, [addFrame]);
+
+  const handleViewProfile = useCallback(() => {
+    viewProfile();
+  }, [viewProfile]);
+
+  const handleSendNotification = useCallback(async () => {
+    if (notificationSent) return;
+
+    try {
+      await sendNotification({
+        title: 'Loteria Update! 🎮',
+        body: 'Join us for a new game of Loteria!'
+      });
+      setNotificationSent(true);
+      setTimeout(() => setNotificationSent(false), 30000);
+    } catch (error) {
+      console.error('Failed to send notification:', error);
+    }
+  }, [sendNotification, notificationSent]);
 
   const saveFrameButton = useMemo(() => {
     if (context && !context.client.added) {
@@ -92,7 +122,33 @@ export default function App() {
               </Wallet>
             </div>
           </div>
-          <div>{saveFrameButton}</div>
+          <div className="pr-1 flex items-center justify-end">
+            {saveFrameButton}
+            <button
+              type="button"
+              className="cursor-pointer bg-transparent font-semibold text-sm pl-2"
+              onClick={close}
+            >
+              CLOSE
+            </button>
+            <button
+              type="button"
+              onClick={handleViewProfile}
+              className="cursor-pointer bg-transparent font-semibold text-sm pl-2"
+            >
+              PROFILE
+            </button>
+            {context?.client.added && (
+              <button
+                type="button"
+                onClick={handleSendNotification}
+                disabled={notificationSent}
+                className="cursor-pointer bg-transparent font-semibold text-sm pl-2 disabled:opacity-50"
+              >
+                {notificationSent ? 'SENT' : 'NOTIFY'}
+              </button>
+            )}
+          </div>
         </header>
 
         <main className="flex-1">
