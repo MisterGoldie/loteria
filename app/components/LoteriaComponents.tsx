@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from "react";
+import { useState, ReactNode } from "react";
 import { Button, Icon } from "./DemoComponents";
 import { useNotification } from "@coinbase/onchainkit/minikit";
 
