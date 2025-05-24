@@ -11,16 +11,13 @@ function withValidProperties(
   );
 }
 
-export async function GET(request: Request) {
-  // Get the host from the request headers
-  const host = request.headers.get('host') || '';
-  
-  // Return the appropriate manifest with the correct domain
+export async function GET() {
+  // Using updated values from the user
   return Response.json({
     accountAssociation: {
-      "header": "eyJmaWQiOjc0NzIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzRjE2ODZlNEI1Yjg2NjdEQzY1RTMzQzMxZDVBYTg2NzcxNzhGZDRBIn0",
-      "payload": "eyJkb21haW4iOiJsb3RlcmlhZ2FtZS54eXoifQ",
-      "signature": "MHg3MjQ0ODZkYzc4YmNjMzUyZTc3NGQwZTc0YjBiMTQyMTQzZjQ2YmJiOWVkZDg4MWU0ODExZGFjMGM4N2IxNWNiNWYzYWNlNzQxNGJlNGRmNGEzYWI5MzNlMTAzODE5NDg4YzRmYmI2OGNjM2MyNDk3MmI2ZWJhMzBlOTAzYWRhZTFi"
+      header: "eyJmaWQiOjc0NzIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzRjE2ODZlNEI1Yjg2NjdEQzY1RTMzQzMxZDVBYTg2NzcxNzhGZDRBIn0",
+      payload: "eyJkb21haW4iOiJ3d3cubG90ZXJpYWdhbWUueHl6In0",
+      signature: "MHg1YmQ4Yjc2MGRiYWJiMWMxM2NkOTliYmJkMzM2ZTQ1ZjlkYjMyZDI2NDVjYzM3OWNiNmZhYjMxNWRhODQwNzk2N2FmZjUwMGY3YmU2MTUwMGJjZjE2ZWY2MGU4MjYyYzg4ZjUzYmM5MWE3YjgyNjk3YzRiZTg1OWY4NTdlNDZkNTFi"
     },
     frame: {
       "version": "1",
