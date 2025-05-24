@@ -108,8 +108,8 @@ export function LoteriaGame() {
     const hasMatch = playerCards.some(card => card.id === nextCard.id);
     if (hasMatch) {
       sendNotification({
-        title: "¡Lotería!",
-        body: `You have ${nextCard.name} on your tabla!`,
+        title: "Match Found!",
+        body: `You have ${nextCard.name} on your board!`,
       });
     }
   };
@@ -129,14 +129,14 @@ export function LoteriaGame() {
     // Check for win condition (all cards selected)
     if (newSelectedCount === 4) {
       sendNotification({
-        title: "¡LOTERÍA!",
-        body: "You've completed your tabla!",
+        title: "LOTERIA!",
+        body: "You've completed your board!",
       });
     }
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in w-full max-w-md">
       {!gameStarted ? (
         <Card title="LOTERIA!">
           <div className="space-y-4">
@@ -144,13 +144,15 @@ export function LoteriaGame() {
               Welcome to <span className="text-[#FFD700] font-bold">Loteria</span>! The traditional Mexican game of chance.
               Get your <span className="text-[#FFD700]">board</span> and start playing!
             </p>
-            <Button 
-              onClick={startGame}
-              icon={<Icon name="star" size="sm" />}
-              className="bg-[#E53935] hover:bg-[#C62828] text-white"
-            >
-              Start Game
-            </Button>
+            <div className="flex justify-center w-full">
+              <Button 
+                onClick={startGame}
+                icon={<Icon name="star" size="sm" />}
+                className="bg-[#E53935] hover:bg-[#C62828] text-white"
+              >
+                Start Game
+              </Button>
+            </div>
           </div>
         </Card>
       ) : (

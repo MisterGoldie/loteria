@@ -3,6 +3,7 @@
 import {
   useMiniKit,
   useAddFrame,
+  useNotification,
 } from "@coinbase/onchainkit/minikit";
 import {
   Name,
@@ -18,6 +19,20 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useAccount } from "wagmi";
+import {
+  Transaction,
+  TransactionButton,
+  TransactionToast,
+  TransactionToastAction,
+  TransactionToastIcon,
+  TransactionToastLabel,
+  TransactionError,
+  TransactionResponse,
+  TransactionStatusAction,
+  TransactionStatusLabel,
+  TransactionStatus,
+} from "@coinbase/onchainkit/transaction";
 import { Button } from "./components/DemoComponents";
 import { Icon } from "./components/DemoComponents";
 import { LoteriaGame } from "./components/LoteriaComponents";
@@ -28,12 +43,38 @@ import { useIsMiniApp } from "./hooks/useIsMiniApp";
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
-
+  const { address } = useAccount();
+  const sendNotification = useNotification();
   
   // Detect if we're in a Farcaster Mini App environment
   const isMiniApp = useIsMiniApp();
 
   const addFrame = useAddFrame();
+  
+  // Transaction logic
+  const calls = useMemo(() => address
+    ? [
+        {
+          to: address,
+          data: "0x" as `0x${string}`,
+          value: BigInt(0),
+        },
+      ]
+    : [], [address]);
+
+  const handleTransactionSuccess = useCallback(async (response: TransactionResponse) => {
+    const transactionHash = response.transactionReceipts[0].transactionHash;
+    console.log(`Transaction successful: ${transactionHash}`);
+    
+    await sendNotification({
+      title: "Transaction Successful!",
+      body: `Transaction hash: ${transactionHash}`,
+    });
+  }, [sendNotification]);
+  
+  const handleTransactionError = useCallback((error: TransactionError) => {
+    console.error("Transaction failed:", error);
+  }, []);
 
   useEffect(() => {
     if (!isFrameReady) {
@@ -79,9 +120,9 @@ export default function App() {
   }, [context, frameAdded, handleAddFrame]);
 
   return (
-    <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900">
-      <div className="w-full max-w-md mx-auto px-4 py-3">
-        <header className="flex justify-between items-center mb-3 h-11">
+    <div className="flex flex-col items-center justify-center min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900">
+      <div className="fixed top-0 left-0 right-0 px-4 py-3 bg-blue-900/80 backdrop-blur-sm z-10">
+        <div className="max-w-7xl mx-auto flex justify-between items-center h-11">
           <div>
             <div className="flex items-center space-x-2">
               <Wallet className="z-10">
@@ -101,10 +142,34 @@ export default function App() {
             </div>
           </div>
           <div>{saveFrameButton}</div>
-        </header>
-
-        <main className="flex-1">
+        </div>
+      </div>
+      
+      <div className="w-full max-w-md mx-auto px-4 py-3">
+        <main className="flex-1 mt-16">
           <LoteriaGame />
+          
+          {/* Hidden transaction component to ensure transaction logic is available */}
+          <div className="hidden">
+            {address && (
+              <Transaction
+                calls={calls}
+                onSuccess={handleTransactionSuccess}
+                onError={handleTransactionError}
+              >
+                <TransactionButton />
+                <TransactionStatus>
+                  <TransactionStatusAction />
+                  <TransactionStatusLabel />
+                </TransactionStatus>
+                <TransactionToast>
+                  <TransactionToastIcon />
+                  <TransactionToastLabel />
+                  <TransactionToastAction />
+                </TransactionToast>
+              </Transaction>
+            )}
+          </div>
         </main>
 
         {/* Footer removed as requested */}
