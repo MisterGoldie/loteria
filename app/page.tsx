@@ -20,8 +20,7 @@ import {
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "./components/DemoComponents";
 import { Icon } from "./components/DemoComponents";
-import { Home } from "./components/DemoComponents";
-import { Features } from "./components/DemoComponents";
+import { LoteriaGame } from "./components/LoteriaComponents";
 
 // Import the Mini App detection hook
 import { useIsMiniApp } from "./hooks/useIsMiniApp";
@@ -29,7 +28,7 @@ import { useIsMiniApp } from "./hooks/useIsMiniApp";
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
-  const [activeTab, setActiveTab] = useState("home");
+
   
   // Detect if we're in a Farcaster Mini App environment
   const isMiniApp = useIsMiniApp();
@@ -80,7 +79,7 @@ export default function App() {
   }, [context, frameAdded, handleAddFrame]);
 
   return (
-    <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme from-[var(--app-background)] to-[var(--app-gray)]">
+    <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900">
       <div className="w-full max-w-md mx-auto px-4 py-3">
         <header className="flex justify-between items-center mb-3 h-11">
           <div>
@@ -105,8 +104,7 @@ export default function App() {
         </header>
 
         <main className="flex-1">
-          {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
-          {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
+          <LoteriaGame />
         </main>
 
         {/* Footer removed as requested */}
