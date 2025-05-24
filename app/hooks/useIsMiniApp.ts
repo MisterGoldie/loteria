@@ -13,7 +13,7 @@ export function useIsMiniApp() {
   useEffect(() => {
     const checkIsMiniApp = async () => {
       try {
-        // Use the isInMiniApp method from the Farcaster SDK
+        // Use the isInMiniApp method from the updated Farcaster SDK
         const result = await sdk.isInMiniApp();
         setIsMiniApp(result);
       } catch (error) {
