@@ -5,7 +5,6 @@ import {
   useAddFrame,
   useOpenUrl,
   useClose,
-  usePrimaryButton,
   useViewProfile,
   useNotification,
 } from "@coinbase/onchainkit/minikit";
