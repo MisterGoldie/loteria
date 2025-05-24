@@ -1,21 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Handle www to non-www redirects
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'www.loteriagame.xyz',
-          },
-        ],
-        destination: 'https://loteriagame.xyz/:path*',
-        permanent: true,
-      },
-    ];
-  },
   // Silence warnings
   // https://github.com/WalletConnect/walletconnect-monorepo/issues/1908
   webpack: (config) => {
