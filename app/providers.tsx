@@ -8,7 +8,7 @@ import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 const patchEthereumProvider = () => {
   if (typeof window !== 'undefined' && window.ethereum) {
     const originalRequest = window.ethereum.request;
-    window.ethereum.request = async function (args: {method: string, params?: any[]}) {
+    window.ethereum.request = async function (args: {method: string, params?: unknown[]}) {
       try {
         return await originalRequest.call(this, args);
       } catch (error) {
