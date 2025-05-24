@@ -24,10 +24,16 @@ import { Icon } from "./components/DemoComponents";
 import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
 
+// Import the Mini App detection hook
+import { useIsMiniApp } from "./hooks/useIsMiniApp";
+
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
+  
+  // Detect if we're in a Farcaster Mini App environment
+  const isMiniApp = useIsMiniApp();
 
   const addFrame = useAddFrame();
   const openUrl = useOpenUrl();
@@ -36,7 +42,12 @@ export default function App() {
     if (!isFrameReady) {
       setFrameReady();
     }
-  }, [setFrameReady, isFrameReady]);
+    
+    // Log the environment detection for debugging
+    if (isMiniApp !== null) {
+      console.log(`Running in Farcaster Mini App: ${isMiniApp}`);
+    }
+  }, [setFrameReady, isFrameReady, isMiniApp]);
 
   const handleAddFrame = useCallback(async () => {
     const frameAdded = await addFrame();
