@@ -186,14 +186,6 @@ type IconProps = {
 }
 
 export function Icon({ name, size = "md", className = "" }: IconProps) {
-  // Define pixel values instead of string sizes for SVG attributes
-  const svgSizes = {
-    sm: { width: "16", height: "16" },
-    md: { width: "20", height: "20" },
-    lg: { width: "24", height: "24" },
-  };
-  
-  // Keep the CSS classes for spacing
   const sizeClasses = {
     sm: "w-4 h-4",
     md: "w-5 h-5",
@@ -205,8 +197,6 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
-        width={svgSizes[size].width}
-        height={svgSizes[size].height}
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -222,8 +212,6 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
-        width={svgSizes[size].width}
-        height={svgSizes[size].height}
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -239,8 +227,6 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
-        width={svgSizes[size].width}
-        height={svgSizes[size].height}
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -256,8 +242,6 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
-        width={svgSizes[size].width}
-        height={svgSizes[size].height}
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -274,8 +258,6 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
-        width={svgSizes[size].width}
-        height={svgSizes[size].height}
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
