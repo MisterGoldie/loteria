@@ -1,7 +1,7 @@
 "use client";
 
-import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { useAccount } from "wagmi";
+import { type ReactNode, useCallback, useState } from "react";
+import { useMiniKit, useNotification } from "@coinbase/onchainkit/minikit";
 import {
   Transaction,
   TransactionButton,
@@ -15,7 +15,6 @@ import {
   TransactionStatusLabel,
   TransactionStatus,
 } from "@coinbase/onchainkit/transaction";
-import { useNotification } from "@coinbase/onchainkit/minikit";
 
 type ButtonProps = {
   children: ReactNode;
@@ -406,37 +405,30 @@ function TodoList() {
 
 
 function TransactionCard() {
-  const { address } = useAccount();
-
-  // Example transaction call - sending 0 ETH to self
-  const calls = useMemo(() => address
-    ? [
-        {
-          to: address,
-          data: "0x" as `0x${string}`,
-          value: BigInt(0),
-        },
-      ]
-    : [], [address]);
-
+  // Use notification hook for sending notifications
   const sendNotification = useNotification();
+  const { context } = useMiniKit();
+  
+  // Check if we're in a Farcaster environment
+  const isFarcasterContext = !!context;
 
-  const handleSuccess = useCallback(async (response: TransactionResponse) => {
-    const transactionHash = response.transactionReceipts[0].transactionHash;
-
-    console.log(`Transaction successful: ${transactionHash}`);
-
-    await sendNotification({
-      title: "Congratulations!",
-      body: `You sent your a transaction, ${transactionHash}!`,
-    });
+  const handleNotification = useCallback(async () => {
+    try {
+      await sendNotification({
+        title: "Loteria App",
+        body: "Thanks for using our app!",
+      });
+      console.log('Notification sent successfully');
+    } catch (error) {
+      console.error('Failed to send notification:', error);
+    }
   }, [sendNotification]);
 
   return (
-    <Card title="Make Your First Transaction">
+    <Card title="Interact with Farcaster">
       <div className="space-y-4">
         <p className="text-[var(--app-foreground-muted)] mb-4">
-          Experience the power of seamless sponsored transactions with{" "}
+          This app is built for Farcaster using{" "}
           <a
             href="https://onchainkit.xyz"
             target="_blank"
@@ -449,28 +441,17 @@ function TransactionCard() {
         </p>
 
         <div className="flex flex-col items-center">
-          {address ? (
-            <Transaction
-              calls={calls}
-              onSuccess={handleSuccess}
-              onError={(error: TransactionError) =>
-                console.error("Transaction failed:", error)
-              }
+          {isFarcasterContext ? (
+            <Button 
+              variant="primary" 
+              onClick={handleNotification}
+              className="w-full"
             >
-              <TransactionButton className="text-white text-md" />
-              <TransactionStatus>
-                <TransactionStatusAction />
-                <TransactionStatusLabel />
-              </TransactionStatus>
-              <TransactionToast className="mb-4">
-                <TransactionToastIcon />
-                <TransactionToastLabel />
-                <TransactionToastAction />
-              </TransactionToast>
-            </Transaction>
+              Send Test Notification
+            </Button>
           ) : (
             <p className="text-yellow-400 text-sm text-center mt-2">
-              Connect your wallet to send a transaction
+              Open this app in Farcaster to use all features
             </p>
           )}
         </div>
