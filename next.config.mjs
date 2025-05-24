@@ -15,7 +15,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; frame-ancestors 'self' *.farcaster.xyz farcaster.xyz *.warpcast.com warpcast.com *.coinbase.com coinbase.com *.base.org *.merkle.io godaddy.com *.godaddy.com; worker-src * blob:;",
+            value: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://*.farcaster.xyz https://*.warpcast.com https://*.coinbase.com https://*.base.org https://*.merkle.io https://*.privy.io https://*.privy.systems https://cloudflareinsights.com *; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; frame-ancestors 'self' *.farcaster.xyz farcaster.xyz *.warpcast.com warpcast.com *.coinbase.com coinbase.com *.base.org *.merkle.io godaddy.com *.godaddy.com; worker-src * blob:;",
           },
           {
             key: 'X-Frame-Options',
