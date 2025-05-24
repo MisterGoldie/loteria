@@ -7,7 +7,7 @@ const nextConfig = {
     return config;
   },
   
-  // Add headers to allow Farcaster to embed the site
+  // Add headers to allow Farcaster to embed the site and fix CSP issues
   async headers() {
     return [
       {
@@ -15,11 +15,11 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' *.farcaster.xyz *.warpcast.com *.coinbase.com godaddy.com *.godaddy.com",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' https://*.walletconnect.com https://explorer-api.walletconnect.com https://*.coinbase.com https://farcaster.xyz https://client.farcaster.xyz https://warpcast.com https://client.warpcast.com https://wrpcd.net https://*.wrpcd.net https://privy.farcaster.xyz https://privy.warpcast.com https://auth.privy.io https://*.rpc.privy.systems https://cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; frame-ancestors 'self' https://*.farcaster.xyz https://*.warpcast.com https://*.coinbase.com https://godaddy.com https://*.godaddy.com; form-action 'self';",
           },
           {
             key: 'X-Frame-Options',
-            value: 'ALLOW-FROM https://warpcast.com https://farcaster.xyz',
+            value: 'SAMEORIGIN',
           },
         ],
       },
