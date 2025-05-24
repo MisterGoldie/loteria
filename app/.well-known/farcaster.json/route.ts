@@ -11,8 +11,11 @@ function withValidProperties(
   );
 }
 
-export async function GET() {
-  // Using updated values from the user
+export async function GET(request: Request) {
+  // Get the host from the request headers
+  const host = request.headers.get('host') || '';
+  
+  // Return the appropriate manifest with the correct domain
   return Response.json({
     accountAssociation: {
       header: "eyJmaWQiOjc0NzIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzRjE2ODZlNEI1Yjg2NjdEQzY1RTMzQzMxZDVBYTg2NzcxNzhGZDRBIn0",
