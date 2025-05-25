@@ -49,8 +49,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-background">
         <Providers>
-          {/* FarcasterLoader handles the Mini App initialization */}
-          {typeof window !== 'undefined' && <FarcasterLoader />}
+          {/* FarcasterLoader is already dynamically imported with SSR disabled */}
+          <FarcasterLoader />
           {children}
         </Providers>
       </body>
