@@ -59,23 +59,6 @@ export default function App() {
     // Only proceed if we have a definitive answer on isMiniApp
     // This ensures we don't render with the initial false value
     const timer = setTimeout(() => {
-      // Log detailed environment information
-      console.log('Farcaster Environment Info:', {
-        isMiniApp,
-        isFrame: !!window.parent && window !== window.top,
-        hasContext: !!context,
-        userFid: context?.user?.fid,
-        clientFid: context?.client?.clientFid,
-        url: window.location.href,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Log the full context object for debugging
-      if (context) {
-        console.log('Full Farcaster context:', context);
-      }
-      
-      // Mark as initialized after a short delay to ensure SDK has time to detect environment
       setIsInitialized(true);
     }, 1000); // Wait 1 second to ensure SDK has time to initialize
     
@@ -90,8 +73,6 @@ export default function App() {
     if (!isFrameReady) {
       setFrameReady();
     }
-    
-    console.log(`Running in Farcaster Mini App: ${isMiniApp}`);
   }, [setFrameReady, isFrameReady, isMiniApp, isClient]);
 
   const handleAddFrame = useCallback(async () => {
@@ -99,7 +80,7 @@ export default function App() {
       // Use the OnchainKit addFrame function
       const result = await addFrame();
       if (result) {
-        console.log('Frame added:', result.url, result.token);
+        // Frame added successfully
         setFrameAdded(true);
       }
     } catch (error) {
