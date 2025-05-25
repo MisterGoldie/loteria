@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     frame: {
       "version": "1",
       "name": "Loteria",
-      "homeUrl": "https://loteriagame.xyz",
+      "homeUrl": "https://loteriagame.xyz?miniApp=true",
       "iconUrl": "https://loteriagame.xyz/icon.png",
       "imageUrl": "https://loteriagame.xyz/image.png",
       "buttonTitle": "Play Loteria",
