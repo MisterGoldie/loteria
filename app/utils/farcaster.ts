@@ -6,6 +6,8 @@
  * Extract the Farcaster ID (FID) from the client context
  * This handles different ways the FID might be stored in the context
  */
+// Disable the ESLint rule for this specific line
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function getFarcasterIdFromContext(context: any): number | undefined {
   // Debug the entire context to see what's available
   console.log('Farcaster context:', JSON.stringify(context, null, 2));

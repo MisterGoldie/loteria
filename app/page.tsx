@@ -18,11 +18,10 @@ import {
   WalletDropdown,
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button, Icon, Home, Features } from "./components/DemoComponents";
-import { FarcasterAvatar } from "./components/FarcasterAvatar";
 import { useIsMiniApp } from "./hooks/useIsMiniApp";
-import { getFarcasterIdFromContext } from "./utils/farcaster";
+import { fetchFarcasterUser } from "./utils/neynar";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -89,7 +88,8 @@ export default function App() {
     }
   }, [addFrame]);
 
-  const saveFrameButton = useMemo(() => {
+  // We'll keep this for future use but comment it out to avoid the unused variable error
+  /* const saveFrameButton = useMemo(() => {
     if (context && !context.client.added) {
       return (
         <Button
@@ -114,7 +114,7 @@ export default function App() {
     }
 
     return null;
-  }, [context, frameAdded, handleAddFrame]);
+  }, [context, frameAdded, handleAddFrame]); */
 
   return (
     <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme from-[var(--app-background)] to-[var(--app-gray)]">

@@ -27,7 +27,7 @@ function preventCspErrors() {
   };
   
   // Also disable Sentry error reporting which can cause issues
-  // @ts-ignore
+  // @ts-expect-error - Sentry is not typed in the window object
   window.__SENTRY__ = { enabled: false };
 }
 
