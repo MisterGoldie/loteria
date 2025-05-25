@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
 
 // Override window.fetch in Farcaster Mini App environment to prevent CSP errors
 function preventCspErrors() {
-  // Only run in browser environment
-  if (typeof window === 'undefined') return;
-  
   // Store the original fetch function
   const originalFetch = window.fetch;
   
@@ -35,7 +32,19 @@ function preventCspErrors() {
 }
 
 export function FarcasterLoader() {
+  // Use a state to track if we're mounted on the client
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // First effect just to mark component as mounted (client-side only)
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  // Second effect for Farcaster initialization - only runs after mounting
+  useEffect(() => {
+    // Skip if not mounted yet (avoids hydration mismatch)
+    if (!isMounted) return;
+    
     const initializeFarcaster = async () => {
       try {
         // Check if we're in a Farcaster Mini App environment
@@ -68,7 +77,7 @@ export function FarcasterLoader() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isMounted]); // Only run after mounting
 
   // This component doesn't render anything visible
   return null;

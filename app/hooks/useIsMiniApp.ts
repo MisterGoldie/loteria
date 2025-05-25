@@ -1,31 +1,33 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { sdk } from '@farcaster/frame-sdk';
 
 /**
  * Hook to detect if the app is running in a Farcaster Mini App environment
- * Based on: https://miniapps.farcaster.xyz/docs/sdk/is-in-mini-app
+ * Modified to avoid hydration errors
  */
 export function useIsMiniApp() {
-  const [isMiniApp, setIsMiniApp] = useState<boolean | null>(null);
+  // Start with false to ensure consistent server/client initial render
+  const [isMiniApp, setIsMiniApp] = useState(false);
   
   useEffect(() => {
-    const checkIsMiniApp = async () => {
+    // This code only runs on the client after hydration is complete
+    const checkIsMiniApp = () => {
       try {
-        // Use the isInMiniApp method from the updated Farcaster SDK
-        const result = await sdk.isInMiniApp();
-        setIsMiniApp(result);
+        const url = new URL(window.location.href);
+        const isMini = 
+          url.searchParams.get('miniApp') === 'true' ||
+          window.location.href.includes('warpcast.com') || 
+          window.location.href.includes('farcaster.xyz');
+        
+        setIsMiniApp(isMini);
       } catch (error) {
         console.error('Error checking if in Mini App:', error);
         setIsMiniApp(false);
       }
     };
     
-    // Only run in browser environment
-    if (typeof window !== 'undefined') {
-      checkIsMiniApp();
-    }
+    checkIsMiniApp();
   }, []);
   
   return isMiniApp;

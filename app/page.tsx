@@ -33,20 +33,27 @@ export default function App() {
   
   // Detect if we're in a Farcaster Mini App environment
   const isMiniApp = useIsMiniApp();
+  // Track client-side rendering
+  const [isClient, setIsClient] = useState(false);
 
   const addFrame = useAddFrame();
-  // Removed unused openUrl variable
 
+  // First effect just for client-side detection
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Second effect for Farcaster initialization
+  useEffect(() => {
+    // Only run after client-side hydration is complete
+    if (!isClient) return;
+    
     if (!isFrameReady) {
       setFrameReady();
     }
     
-    // Log the environment detection for debugging
-    if (isMiniApp !== null) {
-      console.log(`Running in Farcaster Mini App: ${isMiniApp}`);
-    }
-  }, [setFrameReady, isFrameReady, isMiniApp]);
+    console.log(`Running in Farcaster Mini App: ${isMiniApp}`);
+  }, [setFrameReady, isFrameReady, isMiniApp, isClient]);
 
   const handleAddFrame = useCallback(async () => {
     const frameAdded = await addFrame();
