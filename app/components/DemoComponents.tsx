@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import {
   Transaction,
@@ -389,6 +389,12 @@ function TodoList() {
 
 function TransactionCard() {
   const { address } = useAccount();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Use useEffect to mark component as mounted (client-side only)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Example transaction call - sending 0 ETH to self
   const calls = useMemo(() => address
@@ -431,29 +437,36 @@ function TransactionCard() {
         </p>
 
         <div className="flex flex-col items-center">
-          {address ? (
-            <Transaction
-              calls={calls}
-              onSuccess={handleSuccess}
-              onError={(error: TransactionError) =>
-                console.error("Transaction failed:", error)
-              }
-            >
-              <TransactionButton className="text-white text-md" />
-              <TransactionStatus>
-                <TransactionStatusAction />
-                <TransactionStatusLabel />
-              </TransactionStatus>
-              <TransactionToast className="mb-4">
-                <TransactionToastIcon />
-                <TransactionToastLabel />
-                <TransactionToastAction />
-              </TransactionToast>
-            </Transaction>
+          {/* Only render transaction components after client-side hydration */}
+          {isMounted ? (
+            address ? (
+              <Transaction
+                calls={calls}
+                onSuccess={handleSuccess}
+                onError={(error: TransactionError) =>
+                  console.error("Transaction failed:", error)
+                }
+              >
+                <TransactionButton className="text-white text-md" />
+                <TransactionStatus>
+                  <TransactionStatusAction />
+                  <TransactionStatusLabel />
+                </TransactionStatus>
+                <TransactionToast className="mb-4">
+                  <TransactionToastIcon />
+                  <TransactionToastLabel />
+                  <TransactionToastAction />
+                </TransactionToast>
+              </Transaction>
+            ) : (
+              <p className="text-yellow-400 text-sm text-center mt-2">
+                Connect your wallet to send a transaction
+              </p>
+            )
           ) : (
-            <p className="text-yellow-400 text-sm text-center mt-2">
-              Connect your wallet to send a transaction
-            </p>
+            <div className="h-10 w-full flex items-center justify-center">
+              <p className="text-sm text-gray-500">Loading transaction...</p>
+            </div>
           )}
         </div>
       </div>

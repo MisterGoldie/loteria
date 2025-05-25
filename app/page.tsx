@@ -3,6 +3,7 @@
 import {
   useMiniKit,
   useAddFrame,
+  useViewProfile,
 } from "@coinbase/onchainkit/minikit";
 import {
   Name,
@@ -18,32 +19,70 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Button } from "./components/DemoComponents";
-import { Icon } from "./components/DemoComponents";
-import { Home } from "./components/DemoComponents";
-import { Features } from "./components/DemoComponents";
-
-// Import the Mini App detection hook
+import { Button, Icon, Home, Features } from "./components/DemoComponents";
+import { FarcasterAvatar } from "./components/FarcasterAvatar";
 import { useIsMiniApp } from "./hooks/useIsMiniApp";
+import { getFarcasterIdFromContext } from "./utils/farcaster";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
+  const addFrame = useAddFrame();
+  const viewProfile = useViewProfile();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
-  
-  // Detect if we're in a Farcaster Mini App environment
   const isMiniApp = useIsMiniApp();
+  const [isMounted, setIsMounted] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Use useEffect to mark component as mounted (client-side only)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Track client-side rendering
   const [isClient, setIsClient] = useState(false);
+  
+  // Handler for viewing the user's profile
+  const handleViewProfile = useCallback(() => {
+    viewProfile();
+  }, [viewProfile]);
 
-  const addFrame = useAddFrame();
-
-  // First effect just for client-side detection
+  // Set client-side rendering flag
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  // Wait for both Mini App detection and context to be available before initializing
+  useEffect(() => {
+    if (!isClient) return;
+    
+    // Only proceed if we have a definitive answer on isMiniApp
+    // This ensures we don't render with the initial false value
+    const timer = setTimeout(() => {
+      // Log detailed environment information
+      console.log('Farcaster Environment Info:', {
+        isMiniApp,
+        isFrame: !!window.parent && window !== window.top,
+        hasContext: !!context,
+        userFid: context?.user?.fid,
+        clientFid: context?.client?.clientFid,
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Log the full context object for debugging
+      if (context) {
+        console.log('Full Farcaster context:', context);
+      }
+      
+      // Mark as initialized after a short delay to ensure SDK has time to detect environment
+      setIsInitialized(true);
+    }, 1000); // Wait 1 second to ensure SDK has time to initialize
+    
+    return () => clearTimeout(timer);
+  }, [isMiniApp, context, isClient]);
 
-  // Second effect for Farcaster initialization
+  // First effect for Farcaster initialization
   useEffect(() => {
     // Only run after client-side hydration is complete
     if (!isClient) return;
@@ -56,8 +95,17 @@ export default function App() {
   }, [setFrameReady, isFrameReady, isMiniApp, isClient]);
 
   const handleAddFrame = useCallback(async () => {
-    const frameAdded = await addFrame();
-    setFrameAdded(Boolean(frameAdded));
+    try {
+      // Use the OnchainKit addFrame function
+      const result = await addFrame();
+      if (result) {
+        console.log('Frame added:', result.url, result.token);
+        setFrameAdded(true);
+      }
+    } catch (error) {
+      console.error('Error adding frame:', error);
+      setFrameAdded(false);
+    }
   }, [addFrame]);
 
   const saveFrameButton = useMemo(() => {
@@ -95,21 +143,84 @@ export default function App() {
             <div className="flex items-center space-x-2">
               <Wallet className="z-10">
                 <ConnectWallet>
-                  <Name className="text-inherit" />
+                  {/* Show Farcaster profile picture and username in the top right */}
+                  <div className="flex items-center space-x-2">
+                    {context?.user?.pfpUrl ? (
+                      <img 
+                        src={context.user.pfpUrl}
+                        alt={context.user.displayName || 'Profile'}
+                        width="24"
+                        height="24"
+                        className="rounded-full"
+                      />
+                    ) : context?.user?.username ? (
+                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                        {context.user.username.substring(0, 1).toUpperCase()}
+                      </div>
+                    ) : null}
+                    
+                    {context?.user?.username ? (
+                      <span className="text-inherit font-medium">{context.user.username}</span>
+                    ) : (
+                      <Name className="text-inherit" />
+                    )}
+                  </div>
                 </ConnectWallet>
                 <WalletDropdown>
                   <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
+                    {/* ULTRA SIMPLIFIED APPROACH - DIRECT HTML */}
+                    {context?.user?.pfpUrl ? (
+                      <div className="flex justify-center mb-2">
+                        {/* Using direct HTML img tag instead of Next.js Image component */}
+                        <img 
+                          src={context.user.pfpUrl}
+                          alt={context.user.displayName || 'Profile'}
+                          width="64"
+                          height="64"
+                          className="rounded-full"
+                        />
+                      </div>
+                    ) : context?.user?.fid ? (
+                      <div className="flex justify-center mb-2">
+                        <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                          {context.user.displayName?.substring(0, 2) || context.user.username?.substring(0, 2) || 'FC'}
+                        </div>
+                      </div>
+                    ) : (
+                      <Avatar />
+                    )}
+                    {/* Show Farcaster display name and username instead of wallet name */}
+                    {context?.user ? (
+                      <div className="flex flex-col items-center text-center mb-2">
+                        <span className="font-bold text-lg">{context.user.displayName || context.user.username}</span>
+                        <span className="text-sm text-gray-500">@{context.user.username}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Name />
+                        <Address />
+                      </>
+                    )}
                     <EthBalance />
                   </Identity>
+                  <div className="px-4 py-2 border-t border-[var(--app-gray)]">
+                    {isMounted && isInitialized && (
+                      <button
+                        type="button"
+                        onClick={handleViewProfile}
+                        className="cursor-pointer bg-transparent font-semibold text-sm w-full text-left py-2 text-[#0052FF] hover:opacity-80"
+                      >
+                        View Farcaster Profile
+                      </button>
+                    )}
+                  </div>
                   <WalletDropdownDisconnect />
                 </WalletDropdown>
               </Wallet>
             </div>
           </div>
-          <div>{saveFrameButton}</div>
+          {/* Save Frame button removed from UI but logic kept intact */}
+          <div></div>
         </header>
 
         <main className="flex-1">

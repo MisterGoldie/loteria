@@ -47,24 +47,39 @@ export function FarcasterLoader() {
     
     const initializeFarcaster = async () => {
       try {
-        // Check if we're in a Farcaster Mini App environment
-        const url = new URL(window.location.href);
-        const isMiniApp = 
-          url.searchParams.get('miniApp') === 'true' ||
-          window.location.href.includes('warpcast.com') || 
-          window.location.href.includes('farcaster.xyz');
-
-        if (isMiniApp) {
-          // Apply CSP error prevention in Mini App mode
-          preventCspErrors();
-          
-          console.log('Running in Farcaster Mini App mode');
-          // Initialize the Farcaster SDK
+        // Apply CSP error prevention regardless of environment
+        preventCspErrors();
+        
+        // ALWAYS initialize the SDK first, regardless of environment
+        // This ensures the SDK is ready to detect the environment
+        try {
+          // Initialize the SDK
           await sdk.actions.ready();
-          console.log('Farcaster Mini App ready');
+          console.log('Farcaster SDK initialized');
+        } catch (error) {
+          // If ready() fails, it might be because we're not in a Mini App
+          // This is expected in standalone mode
+          console.log('Farcaster SDK ready() failed, likely not in a Mini App:', error);
+        }
+        
+        // Now check if we're in a Mini App environment
+        const isMiniApp = await sdk.isInMiniApp();
+        console.log('SDK isInMiniApp() result:', isMiniApp);
+        
+        // Log additional environment info for debugging
+        console.log('Environment info:', {
+          isIframe: window !== window.top,
+          url: window.location.href,
+          hasParentWindow: !!window.parent,
+          hasPostMessage: typeof window.postMessage === 'function',
+          userAgent: navigator.userAgent
+        });
+        
+        if (isMiniApp) {
+          console.log('Running in Farcaster Mini App mode');
+          // SDK is already initialized above
         } else {
           console.log('Running in standalone website mode');
-          // No need to call ready() in standalone mode
         }
       } catch (error) {
         console.error('Error initializing Farcaster Mini App:', error);
