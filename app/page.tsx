@@ -23,15 +23,8 @@ import { useAccount } from "wagmi";
 import {
   Transaction,
   TransactionButton,
-  TransactionToast,
-  TransactionToastAction,
-  TransactionToastIcon,
-  TransactionToastLabel,
   TransactionError,
   TransactionResponse,
-  TransactionStatusAction,
-  TransactionStatusLabel,
-  TransactionStatus,
 } from "@coinbase/onchainkit/transaction";
 import { Button } from "./components/DemoComponents";
 import { Icon } from "./components/DemoComponents";
