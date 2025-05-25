@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       "splashImageUrl": "https://loteriagame.xyz/splash.png",
       "splashBackgroundColor": "#eeccff",
       "webhookUrl": "https://loteriagame.xyz/api/webhook",
-      "subtitle": "Traditional Mexican bingo with crypto rewards",
+      "subtitle": "Mexican bingo with rewards",
       "description": "Loteria is a fun, interactive game based on traditional Mexican bingo where players can win USDC rewards on Base network",
       "primaryCategory": "games",
       "tags": ["game", "bingo", "crypto", "rewards", "base"],
@@ -44,11 +44,6 @@ export async function GET(request: Request) {
       "noindex": false,
       "requiredChains": [
         "eip155:8453"
-      ],
-      "requiredCapabilities": [
-        "actions.signIn",
-        "wallet.getEvmProvider",
-        "wallet.sendTransaction"
       ]
     }
   });
