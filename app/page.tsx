@@ -149,24 +149,16 @@ export default function App() {
         <main className="flex-1 mt-16">
           <LoteriaGame />
           
-          {/* Hidden transaction component to ensure transaction logic is available */}
-          <div className="hidden">
+          {/* Keep transaction functionality available but don't render UI elements that cause errors */}
+          <div style={{ display: 'none', visibility: 'hidden' }}>
             {address && (
               <Transaction
                 calls={calls}
                 onSuccess={handleTransactionSuccess}
                 onError={handleTransactionError}
               >
+                {/* Render only essential transaction components to avoid unnecessary method calls */}
                 <TransactionButton />
-                <TransactionStatus>
-                  <TransactionStatusAction />
-                  <TransactionStatusLabel />
-                </TransactionStatus>
-                <TransactionToast>
-                  <TransactionToastIcon />
-                  <TransactionToastLabel />
-                  <TransactionToastAction />
-                </TransactionToast>
               </Transaction>
             )}
           </div>

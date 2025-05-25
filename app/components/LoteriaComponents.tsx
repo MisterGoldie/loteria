@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useCallback } from "react";
 import { Button, Icon } from "./DemoComponents";
 import { useNotification } from "@coinbase/onchainkit/minikit";
+import { sdk } from '@farcaster/frame-sdk';
+import { useAccount } from 'wagmi';
 
 // Card component since it's not exported from DemoComponents
 type CardProps = {
@@ -71,8 +73,11 @@ export function LoteriaGame() {
   const [gameStarted, setGameStarted] = useState(false);
   const [remainingCards, setRemainingCards] = useState<typeof loteriaCards>([]);
   const [selectedCount, setSelectedCount] = useState(0);
+  const [rewardSent, setRewardSent] = useState(false);
+  const [hasWon, setHasWon] = useState(false);
   
   const sendNotification = useNotification();
+  const { address } = useAccount();
 
   // Initialize the game
   const startGame = () => {
@@ -85,6 +90,8 @@ export function LoteriaGame() {
     setRemainingCards(remaining);
     setGameStarted(true);
     setSelectedCount(0);
+    setHasWon(false);
+    setRewardSent(false);
     
     // Draw the first card
     drawNextCard();
@@ -114,6 +121,48 @@ export function LoteriaGame() {
     }
   };
 
+  // Send reward to the winner - requires explicit user action
+  const sendReward = useCallback(async () => {
+    if (!address || rewardSent) return;
+    
+    try {
+      sendNotification({
+        title: "Sending Reward",
+        body: "Preparing your reward transaction...",
+      });
+      
+      // Use sendToken for sending USDC token reward
+      const result = await sdk.actions.sendToken({
+        // Base USDC token
+        token: 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        // 0.002 USDC (approx 0.2 cents)
+        amount: '2000',
+        // Send to the player's address
+        recipientAddress: address,
+      });
+      
+      if (result.success) {
+        setRewardSent(true);
+        sendNotification({
+          title: "Prize Sent!",
+          body: `You've received 0.2¢ worth of USDC as a reward! Tx: ${result.send.transaction.slice(0, 10)}...`,
+        });
+      } else {
+        console.error('Failed to send reward:', result.reason, result.error);
+        sendNotification({
+          title: "Reward Error",
+          body: `Unable to send reward: ${result.reason}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error sending reward:', error);
+      sendNotification({
+        title: "Reward Error",
+        body: "There was an error sending your reward. Please try again.",
+      });
+    }
+  }, [address, rewardSent, sendNotification]);
+
   // Select a card on the player's board
   const selectCard = (id: number) => {
     const updatedCards = playerCards.map(card => 
@@ -128,6 +177,7 @@ export function LoteriaGame() {
     
     // Check for win condition (all cards selected)
     if (newSelectedCount === 4) {
+      setHasWon(true);
       sendNotification({
         title: "LOTERIA!",
         body: "You've completed your board!",
@@ -209,6 +259,33 @@ export function LoteriaGame() {
                 New Game
               </Button>
             </div>
+            
+            {/* Reward button that appears after winning */}
+            {hasWon && !rewardSent && address && (
+              <div className="mt-4 border-t border-[#FFD700]/30 pt-4">
+                <div className="flex justify-center">
+                  <Button 
+                    variant="primary" 
+                    onClick={sendReward}
+                    className="bg-[#4CAF50] hover:bg-[#388E3C] text-white"
+                  >
+                    Claim Your Reward
+                  </Button>
+                </div>
+                <p className="text-white text-xs text-center mt-2">
+                  You won! Click to receive 0.2¢ worth of USDC as a reward.
+                </p>
+              </div>
+            )}
+            
+            {/* Thank you message after reward is sent */}
+            {hasWon && rewardSent && (
+              <div className="mt-4 border-t border-[#FFD700]/30 pt-4">
+                <p className="text-[#4CAF50] text-center font-bold">
+                  Reward claimed! Thank you for playing Loteria.
+                </p>
+              </div>
+            )}
           </Card>
         </>
       )}
