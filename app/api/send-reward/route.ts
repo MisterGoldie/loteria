@@ -15,11 +15,11 @@ const TEST_MODE = false;
 // Thirdweb Client ID 
 const THIRDWEB_CLIENT_ID = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || '444f6c9a0e50261e2d494748c7cf930e';
 
-// Base chain definition with custom RPC URL
+// Base chain definition with Coinbase RPC URL
 const BASE_CHAIN = {
   ...Base,
-  // Use more reliable RPC endpoints
-  rpc: ["https://base.llamarpc.com", "https://mainnet.base.org", ...Base.rpc],
+  // Use Coinbase RPC endpoint
+  rpc: ["https://api.developer.coinbase.com/rpc/v1/base/VZ4EHYtDFcThSLQiFz5FpzUWHs8MEYXe"],
 };
 
 // ABI for our LoteriaRewards contract
@@ -79,11 +79,14 @@ async function sendReward(recipientAddress: string) {
     };
     
     try {
-      // Create SDK with detailed logging
+      // Create SDK with detailed logging and direct RPC configuration
       console.log('Creating SDK with private key starting with:', privateKey.substring(0, 10) + '...');
+      console.log('Using Coinbase RPC endpoint');
+      
+      // Create SDK with explicit configuration
       const sdk = ThirdwebSDK.fromPrivateKey(
         privateKey, 
-        chainWithCustomRpc, 
+        BASE_CHAIN, 
         {
           // Use existing secret key
           secretKey: secretKey,
@@ -93,16 +96,21 @@ async function sendReward(recipientAddress: string) {
       // Log SDK creation success
       console.log('SDK created successfully');
       
-      // Get our rewards contract
+      // Get our rewards contract with explicit ABI
       console.log('Getting contract instance');
       const contract = await sdk.getContract(LOTERIA_REWARDS_CONTRACT, LOTERIA_REWARDS_ABI);
       console.log('Contract instance obtained successfully');
       
-      // Try to get the owner of the contract to verify we're calling correctly
+      // Verify the treasury wallet is the contract owner
       try {
         const owner = await contract.call("owner");
         console.log('Contract owner is:', owner);
         console.log('Treasury wallet is owner:', owner.toLowerCase() === '0xe37c201a5d062fb5808e2655efe5ea1541cbc143'.toLowerCase());
+        
+        // Also verify the wallet has ETH
+        const provider = sdk.getProvider();
+        const balance = await provider.getBalance('0xe37c201a5d062fB5808E2655efe5eA1541CBC143');
+        console.log('Treasury wallet ETH balance:', balance.toString());
       } catch (ownerError) {
         console.log('Could not get contract owner:', ownerError);
       }
