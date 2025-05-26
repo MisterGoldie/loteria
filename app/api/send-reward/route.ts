@@ -15,8 +15,12 @@ const TEST_MODE = false;
 // Thirdweb Client ID 
 const THIRDWEB_CLIENT_ID = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || '444f6c9a0e50261e2d494748c7cf930e';
 
-// Base chain definition
-const BASE_CHAIN = Base;
+// Base chain definition with custom RPC URL
+const BASE_CHAIN = {
+  ...Base,
+  // Use more reliable RPC endpoints
+  rpc: ["https://base.llamarpc.com", "https://mainnet.base.org", ...Base.rpc],
+};
 
 // ABI for our LoteriaRewards contract
 const LOTERIA_REWARDS_ABI = [
@@ -47,6 +51,7 @@ async function sendReward(recipientAddress: string) {
     console.log('Starting sendReward function, recipient:', recipientAddress);
     console.log('Environment check - is production?', process.env.NODE_ENV === 'production');
     console.log('TREASURY_PRIVATE_KEY exists?', !!process.env.TREASURY_PRIVATE_KEY);
+    console.log('Using RPC URLs:', BASE_CHAIN.rpc);
     
     // Verify we have a private key
     if (!process.env.TREASURY_PRIVATE_KEY) {
@@ -59,22 +64,59 @@ async function sendReward(recipientAddress: string) {
       ? process.env.TREASURY_PRIVATE_KEY 
       : `0x${process.env.TREASURY_PRIVATE_KEY}`;
     
-    // Initialize the Thirdweb SDK with the treasury private key
-    console.log('Creating thirdweb SDK');
-    const sdk = ThirdwebSDK.fromPrivateKey(privateKey, BASE_CHAIN, {
-      clientId: THIRDWEB_CLIENT_ID,
-    });
+    // Initialize the Thirdweb SDK with the treasury private key and secret key
+    console.log('Creating thirdweb SDK with explicit RPC');
     
-    // Get our rewards contract
-    console.log('Getting contract instance');
-    const contract = await sdk.getContract(LOTERIA_REWARDS_CONTRACT, LOTERIA_REWARDS_ABI);
+    // Check for secret key
+    const secretKey = process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY;
+    console.log('Secret key available:', !!secretKey);
+    console.log('Treasury wallet should be: 0xe37c201a5d062fB5808E2655efe5eA1541CBC143');
     
-    console.log('Sending transaction');
-    const tx = await contract.call("sendReward", [recipientAddress]);
-    const transactionHash = tx.receipt.transactionHash;
+    // Override the RPC URL directly on the chain object
+    const chainWithCustomRpc = {
+      ...BASE_CHAIN,
+      rpc: ["https://base.llamarpc.com", "https://mainnet.base.org", ...BASE_CHAIN.rpc]
+    };
     
-    console.log('Transaction successful:', transactionHash);
-    return { transactionHash };
+    try {
+      // Create SDK with detailed logging
+      console.log('Creating SDK with private key starting with:', privateKey.substring(0, 10) + '...');
+      const sdk = ThirdwebSDK.fromPrivateKey(
+        privateKey, 
+        chainWithCustomRpc, 
+        {
+          // Use existing secret key
+          secretKey: secretKey,
+        }
+      );
+      
+      // Log SDK creation success
+      console.log('SDK created successfully');
+      
+      // Get our rewards contract
+      console.log('Getting contract instance');
+      const contract = await sdk.getContract(LOTERIA_REWARDS_CONTRACT, LOTERIA_REWARDS_ABI);
+      console.log('Contract instance obtained successfully');
+      
+      // Try to get the owner of the contract to verify we're calling correctly
+      try {
+        const owner = await contract.call("owner");
+        console.log('Contract owner is:', owner);
+        console.log('Treasury wallet is owner:', owner.toLowerCase() === '0xe37c201a5d062fb5808e2655efe5ea1541cbc143'.toLowerCase());
+      } catch (ownerError) {
+        console.log('Could not get contract owner:', ownerError);
+      }
+      
+      console.log('Sending transaction');
+      const tx = await contract.call("sendReward", [recipientAddress]);
+      const transactionHash = tx.receipt.transactionHash;
+      
+      console.log('Transaction successful:', transactionHash);
+      return { transactionHash };
+    } catch (error) {
+      console.error("Error in sendReward:", error);
+      throw error;
+    }
   } catch (error) {
     console.error("Error in sendReward:", error);
     throw error;
@@ -134,6 +176,23 @@ export async function POST(request: Request) {
         });
       } catch (contractError: any) {
         console.error('Contract error:', contractError);
+        console.error('Error details:', JSON.stringify(contractError, null, 2));
+        
+        // Log specific information about the error to help debug
+        const errorInfo = {
+          message: contractError.message,
+          code: contractError.code,
+          reason: contractError.reason,
+          data: contractError.data,
+          stack: contractError.stack?.split('\n').slice(0, 3).join('\n')
+        };
+        console.error('Detailed error info:', errorInfo);
+        
+        // Check if it's an RPC error
+        if (contractError.message?.includes('missing response') || 
+            contractError.message?.includes('SERVER_ERROR')) {
+          console.error('RPC CONNECTION ERROR: The Base RPC endpoint is not responding properly');
+        }
         
         // Fallback to test mode if contract call fails
         console.log('Contract call failed, falling back to test mode');
@@ -145,7 +204,8 @@ export async function POST(request: Request) {
           message: `FALLBACK MODE: Simulated sending 0.002 USDC to ${recipient}`,
           testMode: true,
           fallback: true,
-          error: contractError.message
+          error: contractError.message,
+          errorDetails: errorInfo
         });
       }
     }
