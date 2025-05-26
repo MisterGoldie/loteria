@@ -1,0 +1,31 @@
+/* Custom styles for the ConnectWallet button */
+:root {
+  --wallet-button-bg: #05306f;  /* Darker blue */
+  --wallet-button-hover: #052a61;  /* Even darker on hover */
+}
+
+/* Target the Connect Wallet button */
+[data-onchainkit-connect-wallet-button] {
+  background-color: var(--wallet-button-bg) !important;
+  border-color: #FFD700 !important;
+  color: #ffffff !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-onchainkit-connect-wallet-button]:hover {
+  background-color: var(--wallet-button-hover) !important;
+  border-color: #F4C430 !important;
+}
+
+/* Target the wallet button when connected */
+[data-onchainkit-wallet-connected-button] {
+  background-color: var(--wallet-button-bg) !important;
+  border-color: #FFD700 !important;
+  color: #ffffff !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-onchainkit-wallet-connected-button]:hover {
+  background-color: var(--wallet-button-hover) !important;
+  border-color: #F4C430 !important;
+}

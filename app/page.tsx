@@ -23,13 +23,15 @@ import { Button, Icon, Home, Features } from "./components/DemoComponents";
 import { useIsMiniApp } from "./hooks/useIsMiniApp";
 import { fetchFarcasterUser } from "./utils/neynar";
 import { SvgFixer } from "./components/SvgFixer";
+import { LoteriaGame } from "./components/LoteriaComponents";
+import "./components/custom-wallet.css";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const addFrame = useAddFrame();
   const viewProfile = useViewProfile();
   const [frameAdded, setFrameAdded] = useState(false);
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState("loteria");
   const isMiniApp = useIsMiniApp();
   const [isMounted, setIsMounted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -118,7 +120,7 @@ export default function App() {
   }, [context, frameAdded, handleAddFrame]); */
 
   return (
-    <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme from-[var(--app-background)] to-[var(--app-gray)]">
+    <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme bg-[var(--app-background)]">
       {/* Add SvgFixer to fix invalid SVG attributes */}
       <SvgFixer />
       <div className="w-full max-w-md mx-auto px-4 py-3">
@@ -127,16 +129,16 @@ export default function App() {
             <div className="flex items-center space-x-2">
               <Wallet className="z-10">
                 <ConnectWallet>
-                  {/* Show Farcaster profile picture and username in the top right */}
+                  {/* Show Farcaster profile picture and username in the wallet button */}
                   <div className="flex items-center space-x-2">
                     {context?.user?.pfpUrl ? (
-                      <img 
-                        src={context.user.pfpUrl}
-                        alt={context.user.displayName || 'Profile'}
-                        width="24"
-                        height="24"
-                        className="rounded-full"
-                      />
+                      <div className="w-6 h-6 overflow-hidden rounded-full">
+                        <img 
+                          src={context.user.pfpUrl}
+                          alt={context.user.displayName || context.user.username || 'Profile'}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     ) : context?.user?.username ? (
                       <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
                         {context.user.username.substring(0, 1).toUpperCase()}
@@ -152,27 +154,6 @@ export default function App() {
                 </ConnectWallet>
                 <WalletDropdown>
                   <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    {/* ULTRA SIMPLIFIED APPROACH - DIRECT HTML */}
-                    {context?.user?.pfpUrl ? (
-                      <div className="flex justify-center mb-2">
-                        {/* Using direct HTML img tag instead of Next.js Image component */}
-                        <img 
-                          src={context.user.pfpUrl}
-                          alt={context.user.displayName || 'Profile'}
-                          width="64"
-                          height="64"
-                          className="rounded-full"
-                        />
-                      </div>
-                    ) : context?.user?.fid ? (
-                      <div className="flex justify-center mb-2">
-                        <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                          {context.user.displayName?.substring(0, 2) || context.user.username?.substring(0, 2) || 'FC'}
-                        </div>
-                      </div>
-                    ) : (
-                      <Avatar />
-                    )}
                     {/* Show Farcaster display name and username instead of wallet name */}
                     {context?.user ? (
                       <div className="flex flex-col items-center text-center mb-2">
@@ -208,6 +189,7 @@ export default function App() {
         </header>
 
         <main className="flex-1">
+          {activeTab === "loteria" && <LoteriaGame />}
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
         </main>

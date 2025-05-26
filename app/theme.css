@@ -5,32 +5,32 @@
 @tailwind utilities;
 
 :root {
-  --app-background: #ffffff;
-  --app-foreground: #111111;
-  --app-foreground-muted: #58585c;
-  --app-accent: #0052ff;
-  --app-accent-hover: #0047e1;
-  --app-accent-active: #003db8;
-  --app-accent-light: #e6edff;
-  --app-gray: #f5f5f5;
-  --app-gray-dark: #e0e0e0;
-  --app-card-bg: rgba(255, 255, 255, 0.4);
-  --app-card-border: rgba(0, 0, 0, 0.1);
+  --app-background: #1150a1;
+  --app-foreground: #ffffff;
+  --app-foreground-muted: #e0e0e0;
+  --app-accent: #FFD700;
+  --app-accent-hover: #F4C430;
+  --app-accent-active: #DAA520;
+  --app-accent-light: rgba(255, 215, 0, 0.15);
+  --app-gray: #094293;
+  --app-gray-dark: #05306f;
+  --app-card-bg: rgba(9, 66, 147, 0.6);
+  --app-card-border: rgba(255, 215, 0, 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --app-background: #111111;
+    --app-background: #0a3b8a;
     --app-foreground: #ffffff;
-    --app-foreground-muted: #c8c8d1;
-    --app-accent: #0052ff;
-    --app-accent-hover: #0047e1;
-    --app-accent-active: #003db8;
-    --app-accent-light: #1e293b;
-    --app-gray: #1e1e1e;
-    --app-gray-dark: #2e2e2e;
-    --app-card-bg: rgba(17, 17, 17, 0.4);
-    --app-card-border: rgba(115, 115, 115, 0.5);
+    --app-foreground-muted: #e0e0e0;
+    --app-accent: #FFD700;
+    --app-accent-hover: #F4C430;
+    --app-accent-active: #DAA520;
+    --app-accent-light: rgba(255, 215, 0, 0.15);
+    --app-gray: #083679;
+    --app-gray-dark: #052a61;
+    --app-card-bg: rgba(8, 54, 121, 0.6);
+    --app-card-border: rgba(255, 215, 0, 0.3);
   }
 }
 
@@ -86,6 +86,54 @@
   --ock-line-default: var(--app-gray-dark);
   --ock-line-heavy: #a1a1aa;
   --ock-line-inverse: #d4d4d8;
+}
+
+* {
+  touch-action: manipulation;
+}
+
+body {
+  color: var(--app-foreground);
+  background: var(--app-background);
+  font-family: var(--font-geist-sans), sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-fade-out {
+  animation: fadeOut 3s forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 * {
