@@ -18,8 +18,8 @@ const THIRDWEB_CLIENT_ID = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || '444f6c
 // Base chain definition with Coinbase RPC URL
 const BASE_CHAIN = {
   ...Base,
-  // Use Coinbase RPC endpoint
-  rpc: ["https://api.developer.coinbase.com/rpc/v1/base/VZ4EHYtDFcThSLQiFz5FpzUWHs8MEYXe"],
+  // Use Coinbase RPC endpoint with your API key
+  rpc: ["https://api.developer.coinbase.com/rpc/v1/base/Sjvb9zgNSr0BCuwLQquZ3QXUK7MN5PGw"],
 };
 
 // ABI for our LoteriaRewards contract
