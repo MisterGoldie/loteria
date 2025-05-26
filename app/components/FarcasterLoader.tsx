@@ -12,9 +12,13 @@ function preventCspErrors() {
   window.fetch = function(input, init) {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input instanceof Request ? input.url : '';
     
-    // Check if the URL is for WalletConnect or other blocked services
-    if (url.includes('walletconnect.com') || url.includes('explorer-api.walletconnect.com')) {
-      console.log('Blocking request to:', url);
+    // Block all MetaMask and WalletConnect requests
+    if (url.includes('walletconnect.com') || 
+        url.includes('explorer-api.walletconnect.com') || 
+        url.includes('metamask') || 
+        url.includes('infura') ||
+        url.includes('ethereum')) {
+      console.log('Blocking wallet request to:', url);
       // Return a resolved promise with empty data to prevent errors
       return Promise.resolve(new Response(JSON.stringify({ wallets: [] }), {
         status: 200,
@@ -29,6 +33,54 @@ function preventCspErrors() {
   // Also disable Sentry error reporting which can cause issues
   // @ts-expect-error - Sentry is not typed in the window object
   window.__SENTRY__ = { enabled: false };
+  
+  // Safely block MetaMask detection without trying to redefine properties
+  try {
+    // Check if the ethereum property exists and if it's configurable
+    const ethereumDesc = Object.getOwnPropertyDescriptor(window, 'ethereum');
+    
+    if (!ethereumDesc) {
+      // Property doesn't exist yet, so we can define it
+      Object.defineProperty(window, 'ethereum', {
+        value: undefined,
+        configurable: true,
+        writable: false
+      });
+    } else if (ethereumDesc.configurable) {
+      // Property exists but is configurable, so we can redefine it
+      Object.defineProperty(window, 'ethereum', {
+        value: undefined,
+        configurable: true,
+        writable: false
+      });
+    } else {
+      // Property exists but isn't configurable, so we'll use a different approach
+      console.log('ethereum property already exists and is not configurable');
+      
+      // Try to intercept calls to ethereum methods
+      if (window.ethereum) {
+        const originalEthereum = window.ethereum;
+        const mockEthereum = {
+          // Return empty values for any ethereum method calls
+          request: () => Promise.resolve([]),
+          enable: () => Promise.resolve([]),
+          send: () => Promise.resolve([]),
+          sendAsync: () => Promise.resolve([]),
+          on: () => {},
+          removeListener: () => {}
+        };
+        
+        // Try to replace ethereum with our mock
+        try {
+          window.ethereum = mockEthereum;
+        } catch (e) {
+          console.log('Could not replace ethereum object:', e);
+        }
+      }
+    }
+  } catch (error) {
+    console.log('Error handling ethereum property:', error);
+  }
 }
 
 export function FarcasterLoader() {

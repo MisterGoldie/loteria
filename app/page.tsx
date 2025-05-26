@@ -22,6 +22,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button, Icon, Home, Features } from "./components/DemoComponents";
 import { useIsMiniApp } from "./hooks/useIsMiniApp";
 import { fetchFarcasterUser } from "./utils/neynar";
+import { SvgFixer } from "./components/SvgFixer";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -118,6 +119,8 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme from-[var(--app-background)] to-[var(--app-gray)]">
+      {/* Add SvgFixer to fix invalid SVG attributes */}
+      <SvgFixer />
       <div className="w-full max-w-md mx-auto px-4 py-3">
         <header className="flex justify-between items-center mb-3 h-11">
           <div>
