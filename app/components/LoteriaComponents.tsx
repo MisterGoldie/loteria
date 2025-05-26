@@ -129,10 +129,18 @@ export function LoteriaGame() {
   
   // Send reward to the winner using our thirdweb-powered API endpoint
   const sendReward = useCallback(async () => {
-    if (!address || rewardSent) return;
+    console.log('sendReward function called');
+    console.log('address:', address);
+    console.log('rewardSent:', rewardSent);
+    
+    if (!address || rewardSent) {
+      console.log('Early return - address missing or reward already sent');
+      return;
+    }
     
     try {
       // Show sending notification
+      console.log('Showing notification and preparing to call API');
       sendNotification({
         title: "Processing Reward",
         body: "Your USDC reward is being processed...",
@@ -140,6 +148,7 @@ export function LoteriaGame() {
       
       // Call our backend API to send the USDC reward from the treasury wallet
       // This uses thirdweb on the backend to handle the transaction
+      console.log('Calling API with recipient:', address);
       const response = await fetch('/api/send-reward', {
         method: 'POST',
         headers: {
@@ -147,11 +156,12 @@ export function LoteriaGame() {
         },
         body: JSON.stringify({
           recipient: address,
-          amount: REWARD_AMOUNT, // Fixed at 0.002 USDC (0.2¢)
         }),
       });
       
+      console.log('API response received:', response.status);
       const data = await response.json();
+      console.log('API response data:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send reward');
@@ -159,6 +169,7 @@ export function LoteriaGame() {
       
       if (data.success) {
         // Mark as sent
+        console.log('Setting rewardSent to true');
         setRewardSent(true);
         
         // Show simple success notification with the transaction hash
