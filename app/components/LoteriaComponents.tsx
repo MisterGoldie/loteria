@@ -96,29 +96,44 @@ export function LoteriaGame() {
     
     // Draw the first card
     drawNextCard();
+    
+    // Try to send a notification, but don't block if it fails
+    try {
+      sendNotification({
+        title: "Game Started",
+        body: "Your Loteria game has begun!",
+      }).catch(error => {
+        console.log('Game start notification failed, but game continues:', error);
+      });
+    } catch (error) {
+      console.log('Error sending game start notification, but game continues:', error);
+    }
   };
 
   // Draw the next card
   const drawNextCard = () => {
     if (remainingCards.length === 0) {
-      sendNotification({
-        title: "Game Over",
-        body: "No more cards to draw!",
-      });
       return;
     }
-
-    const nextCard = remainingCards[0];
+    
+    // Get a random card from the remaining cards
+    const randomIndex = Math.floor(Math.random() * remainingCards.length);
+    const nextCard = remainingCards[randomIndex];
+    
+    // Set the current card and update remaining cards
     setCurrentCard(nextCard);
-    setRemainingCards(remainingCards.slice(1));
-
-    // Check if the player has this card
-    const hasMatch = playerCards.some(card => card.id === nextCard.id);
-    if (hasMatch) {
+    setRemainingCards(remainingCards.filter((_, index) => index !== randomIndex));
+    
+    // Try to send a notification, but don't block if it fails
+    try {
       sendNotification({
-        title: "Match Found!",
-        body: `You have ${nextCard.name} on your board!`,
+        title: "New Card Drawn",
+        body: `${nextCard.name} has been drawn!`,
+      }).catch(error => {
+        console.log('Notification failed, but game continues:', error);
       });
+    } catch (error) {
+      console.log('Error sending notification, but game continues:', error);
     }
   };
 
@@ -139,12 +154,16 @@ export function LoteriaGame() {
     }
     
     try {
-      // Show sending notification
+      // Show sending notification (safely)
       console.log('Showing notification and preparing to call API');
-      sendNotification({
-        title: "Processing Reward",
-        body: "Your USDC reward is being processed...",
-      });
+      try {
+        sendNotification({
+          title: "Processing Reward",
+          body: "Your USDC reward is being processed...",
+        }).catch(err => console.log('Processing notification failed, continuing anyway:', err));
+      } catch (notifyError) {
+        console.log('Error showing processing notification, continuing anyway:', notifyError);
+      }
       
       // Call our backend API to send the USDC reward from the treasury wallet
       // This uses thirdweb on the backend to handle the transaction
@@ -172,23 +191,32 @@ export function LoteriaGame() {
         console.log('Setting rewardSent to true');
         setRewardSent(true);
         
-        // Show simple success notification with the transaction hash
-        sendNotification({
-          title: "USDC Reward Received!",
-          body: `You've received ${REWARD_AMOUNT} USDC as a reward! Tx: ${data.transactionHash.slice(0, 10)}...`,
-        });
+        // Show simple success notification with the transaction hash (safely)
+        try {
+          sendNotification({
+            title: "USDC Reward Received!",
+            body: `You've received ${REWARD_AMOUNT} USDC as a reward! ${data.transactionHash ? `Tx: ${data.transactionHash.slice(0, 10)}...` : ''}`,
+          }).catch(err => console.log('Success notification failed, but reward was sent:', err));
+        } catch (notifyError) {
+          console.log('Error showing success notification, but reward was sent:', notifyError);
+        }
       } else {
         throw new Error(data.error || 'Transaction failed');
       }
     } catch (error) {
       console.error('Error processing reward:', error);
       
-      sendNotification({
-        title: "Reward Error",
-        body: typeof error === 'object' && error !== null && 'message' in error 
-          ? (error.message as string)
-          : "There was an error processing your reward. Please try again later.",
-      });
+      // Show error notification (safely)
+      try {
+        sendNotification({
+          title: "Reward Error",
+          body: typeof error === 'object' && error !== null && 'message' in error 
+            ? (error.message as string)
+            : "There was an error processing your reward. Please try again later.",
+        }).catch(err => console.log('Error notification failed:', err));
+      } catch (notifyError) {
+        console.log('Error showing error notification:', notifyError);
+      }
     }
   }, [address, rewardSent, sendNotification]);
 
@@ -207,10 +235,18 @@ export function LoteriaGame() {
     // Check for win condition (all cards selected)
     if (newSelectedCount === 4) {
       setHasWon(true);
-      sendNotification({
-        title: "LOTERIA!",
-        body: "You've completed your board!",
-      });
+      
+      // Try to send a notification, but don't block if it fails
+      try {
+        sendNotification({
+          title: "LOTERIA!",
+          body: "You've completed your board!",
+        }).catch(error => {
+          console.log('Win notification failed, but game continues:', error);
+        });
+      } catch (error) {
+        console.log('Error sending win notification, but game continues:', error);
+      }
     }
   };
 

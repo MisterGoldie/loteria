@@ -344,7 +344,7 @@ function TransactionCard() {
     ? [
         {
           // Using USDC contract on Base network (this would be the actual USDC contract)
-          to: address, // Replace with the actual recipient address when sending rewards
+          to: `0x${address.slice(2)}` as `0x${string}`, // Ensure it's in the correct 0x format
           data: "0x" as `0x${string}`,
           value: BigInt(0), // Using 0 for now, this would be replaced with actual USDC transfer
         },

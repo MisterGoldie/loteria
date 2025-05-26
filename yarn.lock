@@ -8672,7 +8672,7 @@ varint@^6.0.0:
   resolved "https://registry.npmjs.org/varint/-/varint-6.0.0.tgz"
   integrity sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==
 
-viem@^2.1.1, viem@^2.21.26, viem@^2.21.55, viem@^2.27.2, viem@>=2.23.11, viem@2.x:
+viem@^2.1.1, viem@^2.21.26, viem@^2.21.55, viem@^2.27.2, viem@^2.30.1, viem@>=2.23.11, viem@2.x:
   version "2.30.1"
   resolved "https://registry.npmjs.org/viem/-/viem-2.30.1.tgz"
   integrity sha512-CkoS5Vv6kiRGmRF2xO2z275Gu90vTrKZHf/ckYXxP2J94UvCnFvUcbRdfit6uebj1I8nFwkGlkkOMuOZDHyO4w==
