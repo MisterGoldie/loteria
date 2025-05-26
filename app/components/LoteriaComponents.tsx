@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, ReactNode, useCallback } from "react";
+import { useState, ReactNode, useCallback, useMemo, useEffect } from "react";
 import { Button, Icon } from "./DemoComponents";
 import { useNotification } from "@coinbase/onchainkit/minikit";
-import { sdk } from '@farcaster/frame-sdk';
 import { useAccount } from 'wagmi';
+import { parseUnits, encodeFunctionData } from 'viem';
+import { sdk } from '@farcaster/frame-sdk';
 
 // Card component since it's not exported from DemoComponents
 type CardProps = {
@@ -121,44 +122,61 @@ export function LoteriaGame() {
     }
   };
 
-  // Send reward to the winner - requires explicit user action
+  // Constants for the USDC reward
+  const TREASURY_WALLET = '0xe06d2247eBA1e589Be85954eEEbE3285A692FAfA'; // Treasury wallet address
+  const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // USDC on Base
+  const REWARD_AMOUNT = '0.002'; // 0.002 USDC (6 decimals = 2000 units)
+  
+  // Send reward to the winner using our thirdweb-powered API endpoint
   const sendReward = useCallback(async () => {
     if (!address || rewardSent) return;
     
     try {
+      // Show sending notification
       sendNotification({
-        title: "Sending Reward",
-        body: "Preparing your reward transaction...",
+        title: "Processing Reward",
+        body: "Your USDC reward is being processed...",
       });
       
-      // Use sendToken for sending USDC token reward
-      const result = await sdk.actions.sendToken({
-        // Base USDC token
-        token: 'eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-        // 0.002 USDC (approx 0.2 cents)
-        amount: '2000',
-        // Send to the player's address
-        recipientAddress: address,
+      // Call our backend API to send the USDC reward from the treasury wallet
+      // This uses thirdweb on the backend to handle the transaction
+      const response = await fetch('/api/send-reward', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipient: address,
+          amount: REWARD_AMOUNT, // Fixed at 0.002 USDC (0.2¢)
+        }),
       });
       
-      if (result.success) {
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reward');
+      }
+      
+      if (data.success) {
+        // Mark as sent
         setRewardSent(true);
+        
+        // Show simple success notification with the transaction hash
         sendNotification({
-          title: "Prize Sent!",
-          body: `You've received 0.2¢ worth of USDC as a reward! Tx: ${result.send.transaction.slice(0, 10)}...`,
+          title: "USDC Reward Received!",
+          body: `You've received ${REWARD_AMOUNT} USDC as a reward! Tx: ${data.transactionHash.slice(0, 10)}...`,
         });
       } else {
-        console.error('Failed to send reward:', result.reason, result.error);
-        sendNotification({
-          title: "Reward Error",
-          body: `Unable to send reward: ${result.reason}`,
-        });
+        throw new Error(data.error || 'Transaction failed');
       }
     } catch (error) {
-      console.error('Error sending reward:', error);
+      console.error('Error processing reward:', error);
+      
       sendNotification({
         title: "Reward Error",
-        body: "There was an error sending your reward. Please try again.",
+        body: typeof error === 'object' && error !== null && 'message' in error 
+          ? (error.message as string)
+          : "There was an error processing your reward. Please try again later.",
       });
     }
   }, [address, rewardSent, sendNotification]);
