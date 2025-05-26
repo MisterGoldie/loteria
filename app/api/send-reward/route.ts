@@ -9,7 +9,8 @@ const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const LOTERIA_REWARDS_CONTRACT = '0x6A27A08A1c43B995E483C9304a992B8dDDB7D41c';
 
 // Test Mode for local development
-const TEST_MODE = process.env.NODE_ENV !== 'production';
+// FORCE PRODUCTION MODE - Override all test mode settings
+const TEST_MODE = false;
 
 // Thirdweb Client ID 
 const THIRDWEB_CLIENT_ID = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || '444f6c9a0e50261e2d494748c7cf930e';
@@ -87,6 +88,10 @@ export async function POST(request: Request) {
     const { recipient } = body;
     
     console.log('API endpoint called with recipient:', recipient);
+    console.log('TREASURY_PRIVATE_KEY exists?', !!process.env.TREASURY_PRIVATE_KEY);
+    console.log('TREASURY_PRIVATE_KEY format check:', process.env.TREASURY_PRIVATE_KEY ? 
+      `Starts with 0x: ${process.env.TREASURY_PRIVATE_KEY.startsWith('0x')}, Length: ${process.env.TREASURY_PRIVATE_KEY.length}` : 'N/A');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
     
     // Validate input
     if (!recipient) {
@@ -96,10 +101,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Force test mode if we don't have a private key, even in production
-    const forceTestMode = TEST_MODE || !process.env.TREASURY_PRIVATE_KEY;
+    // BYPASS ALL TEST MODE CHECKS - FORCE PRODUCTION MODE
+    console.log('FORCING PRODUCTION MODE NOW - SENDING REAL TRANSACTION');
     
-    if (forceTestMode) {
+    // Skip test mode entirely and go straight to production
+    if (false) {
       // Simulate sending in test mode
       console.log('Running in TEST MODE - simulating transaction');
       
