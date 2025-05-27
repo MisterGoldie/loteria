@@ -15,12 +15,19 @@ const TEST_MODE = false;
 // Thirdweb Client ID 
 const THIRDWEB_CLIENT_ID = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || '444f6c9a0e50261e2d494748c7cf930e';
 
-// Base chain definition with Coinbase RPC URL
+// Base chain definition with Alchemy RPC URL
 const BASE_CHAIN = {
   ...Base,
-  // Use Coinbase RPC endpoint with your API key
-  rpc: ["https://api.developer.coinbase.com/rpc/v1/base/Sjvb9zgNSr0BCuwLQquZ3QXUK7MN5PGw"],
+  // Use Alchemy RPC endpoint with user's API key
+  rpc: ["https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS"],
 };
+
+// Backup RPC URLs if needed
+const BACKUP_RPCS = [
+  "https://api.developer.coinbase.com/rpc/v1/base/Sjvb9zgNSr0BCuwLQquZ3QXUK7MN5PGw",
+  "https://mainnet.base.org",
+  "https://base.llamarpc.com"
+];
 
 // ABI for our LoteriaRewards contract
 const LOTERIA_REWARDS_ABI = [
@@ -42,16 +49,135 @@ const LOTERIA_REWARDS_ABI = [
     ],
     "stateMutability": "nonpayable",
     "type": "function" // Explicitly set type to "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ] as const; // Add as const to make it a readonly array
+
+/**
+ * A simplified function that uses direct RPC calls to send a reward
+ * This bypasses provider issues by using direct HTTP requests
+ */
+async function simpleSendReward(recipientAddress: string): Promise<{txHash: string}> {
+  // Verify we have a private key
+  if (!process.env.TREASURY_PRIVATE_KEY) {
+    throw new Error('Treasury private key not configured');
+  }
+  
+  // Import ethers directly
+  const { ethers } = await import('ethers');
+  
+  // Create a wallet with no provider (we'll handle RPC calls manually)
+  const privateKey = process.env.TREASURY_PRIVATE_KEY.startsWith('0x') 
+    ? process.env.TREASURY_PRIVATE_KEY 
+    : `0x${process.env.TREASURY_PRIVATE_KEY}`;
+  
+  const wallet = new ethers.Wallet(privateKey as string);
+  console.log('Wallet address:', wallet.address);
+  
+  // Create a contract interface for encoding the function call correctly
+  const iface = new ethers.utils.Interface([
+    'function sendReward(address player) returns (bool)'
+  ]);
+  
+  // Encode the function call with the recipient address - this will handle the 0x prefix properly
+  const data = iface.encodeFunctionData('sendReward', [recipientAddress]);
+  console.log('Encoded function data:', data);
+  
+  // Get the current nonce for the wallet
+  const nonceResponse = await fetch('https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_getTransactionCount',
+      params: [wallet.address, 'latest'],
+    }),
+  });
+  
+  const nonceData = await nonceResponse.json();
+  const nonce = parseInt(nonceData.result, 16);
+  console.log('Current nonce:', nonce);
+  
+  // Get gas price
+  const gasPriceResponse = await fetch('https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'eth_gasPrice',
+      params: [],
+    }),
+  });
+  
+  const gasPriceData = await gasPriceResponse.json();
+  const gasPrice = gasPriceData.result;
+  console.log('Gas price:', gasPrice);
+  
+  // Create transaction object
+  const tx = {
+    to: LOTERIA_REWARDS_CONTRACT,
+    nonce: nonce,
+    gasLimit: ethers.utils.hexlify(300000), // Set a high gas limit
+    gasPrice: gasPrice,
+    data: data,
+    chainId: BASE_CHAIN.chainId,
+  };
+  
+  // Sign the transaction
+  console.log('Signing transaction...');
+  const signedTx = await wallet.signTransaction(tx);
+  
+  // Send the raw transaction
+  console.log('Sending raw transaction...');
+  const sendTxResponse = await fetch('https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'eth_sendRawTransaction',
+      params: [signedTx],
+    }),
+  });
+  
+  const sendTxData = await sendTxResponse.json();
+  console.log('Transaction response:', sendTxData);
+  
+  if (sendTxData.error) {
+    throw new Error(`RPC error: ${sendTxData.error.message || JSON.stringify(sendTxData.error)}`);
+  }
+  
+  const txHash = sendTxData.result;
+  console.log('Transaction hash:', txHash);
+  
+  return { txHash };
+}
 
 // Function to send rewards using our LoteriaRewards contract
 async function sendReward(recipientAddress: string) {
   try {
     console.log('Starting sendReward function, recipient:', recipientAddress);
     console.log('Environment check - is production?', process.env.NODE_ENV === 'production');
-    console.log('TREASURY_PRIVATE_KEY exists?', !!process.env.TREASURY_PRIVATE_KEY);
-    console.log('Using RPC URLs:', BASE_CHAIN.rpc);
     
     // Verify we have a private key
     if (!process.env.TREASURY_PRIVATE_KEY) {
@@ -64,65 +190,82 @@ async function sendReward(recipientAddress: string) {
       ? process.env.TREASURY_PRIVATE_KEY 
       : `0x${process.env.TREASURY_PRIVATE_KEY}`;
     
-    // Initialize the Thirdweb SDK with the treasury private key and secret key
-    console.log('Creating thirdweb SDK with explicit RPC');
-    
-    // Check for secret key
-    const secretKey = process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY;
-    console.log('Secret key available:', !!secretKey);
     console.log('Treasury wallet should be: 0xe37c201a5d062fB5808E2655efe5eA1541CBC143');
     
-    // Override the RPC URL directly on the chain object
-    const chainWithCustomRpc = {
-      ...BASE_CHAIN,
-      rpc: ["https://base.llamarpc.com", "https://mainnet.base.org", ...BASE_CHAIN.rpc]
-    };
-    
     try {
-      // Create SDK with detailed logging and direct RPC configuration
-      console.log('Creating SDK with private key starting with:', privateKey.substring(0, 10) + '...');
-      console.log('Using Coinbase RPC endpoint');
+      // Use direct ethers.js approach which is more reliable
+      console.log('Using direct ethers.js approach');
+      const { ethers } = await import('ethers');
       
-      // Create SDK with explicit configuration
-      const sdk = ThirdwebSDK.fromPrivateKey(
-        privateKey, 
-        BASE_CHAIN, 
-        {
-          // Use existing secret key
-          secretKey: secretKey,
-        }
+      // Create provider with multiple fallback URLs
+      const provider = new ethers.providers.FallbackProvider([
+        new ethers.providers.JsonRpcProvider("https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS"),
+        new ethers.providers.JsonRpcProvider("https://mainnet.base.org"),
+        new ethers.providers.JsonRpcProvider("https://base.llamarpc.com")
+      ]);
+      
+      // Create wallet with the private key (which we've verified exists)
+      const wallet = new ethers.Wallet(privateKey as string, provider);
+      const walletAddress = await wallet.getAddress();
+      console.log('Wallet address:', walletAddress);
+      
+      // Check wallet ETH balance
+      const balance = await provider.getBalance(walletAddress);
+      console.log('Treasury wallet ETH balance:', ethers.utils.formatEther(balance), 'ETH');
+      
+      // Create contract instance
+      const contract = new ethers.Contract(
+        LOTERIA_REWARDS_CONTRACT,
+        LOTERIA_REWARDS_ABI,
+        wallet
       );
       
-      // Log SDK creation success
-      console.log('SDK created successfully');
-      
-      // Get our rewards contract with explicit ABI
-      console.log('Getting contract instance');
-      const contract = await sdk.getContract(LOTERIA_REWARDS_CONTRACT, LOTERIA_REWARDS_ABI);
-      console.log('Contract instance obtained successfully');
-      
-      // Verify the treasury wallet is the contract owner
+      // Check if wallet is contract owner
       try {
-        const owner = await contract.call("owner");
+        const owner = await contract.owner();
         console.log('Contract owner is:', owner);
-        console.log('Treasury wallet is owner:', owner.toLowerCase() === '0xe37c201a5d062fb5808e2655efe5ea1541cbc143'.toLowerCase());
-        
-        // Also verify the wallet has ETH
-        const provider = sdk.getProvider();
-        const balance = await provider.getBalance('0xe37c201a5d062fB5808E2655efe5eA1541CBC143');
-        console.log('Treasury wallet ETH balance:', balance.toString());
+        console.log('Treasury wallet is owner:', owner.toLowerCase() === walletAddress.toLowerCase());
       } catch (ownerError) {
         console.log('Could not get contract owner:', ownerError);
       }
       
-      console.log('Sending transaction');
-      const tx = await contract.call("sendReward", [recipientAddress]);
-      const transactionHash = tx.receipt.transactionHash;
+      // Send transaction
+      console.log('Sending transaction...');
+      const gasPrice = await provider.getGasPrice();
+      console.log('Current gas price:', ethers.utils.formatUnits(gasPrice, 'gwei'), 'gwei');
+      
+      // Estimate gas
+      const gasEstimate = await contract.estimateGas.sendReward(recipientAddress, {
+        gasPrice
+      }).catch(e => {
+        console.log('Gas estimation failed, using default:', e);
+        return ethers.BigNumber.from(300000); // Default gas limit
+      });
+      
+      console.log('Estimated gas:', gasEstimate.toString());
+      
+      // Send transaction with explicit gas settings
+      const tx = await contract.sendReward(recipientAddress, {
+        gasLimit: gasEstimate.mul(ethers.BigNumber.from(12)).div(ethers.BigNumber.from(10)), // Add 20% buffer
+        gasPrice: gasPrice
+      });
+      
+      console.log('Transaction sent:', tx.hash);
+      
+      // Wait for transaction receipt
+      console.log('Waiting for transaction confirmation...');
+      const receipt = await tx.wait(1); // Wait for 1 confirmation
+      
+      console.log('Transaction confirmed:', receipt);
+      const transactionHash = receipt.transactionHash;
       
       console.log('Transaction successful:', transactionHash);
       return { transactionHash };
     } catch (error) {
-      console.error("Error in sendReward:", error);
+      console.error('Transaction failed:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // If we get here, both approaches failed
       throw error;
     }
   } catch (error) {
@@ -137,96 +280,61 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { recipient } = body;
     
-    console.log('API endpoint called with recipient:', recipient);
-    console.log('TREASURY_PRIVATE_KEY exists?', !!process.env.TREASURY_PRIVATE_KEY);
-    console.log('TREASURY_PRIVATE_KEY format check:', process.env.TREASURY_PRIVATE_KEY ? 
-      `Starts with 0x: ${process.env.TREASURY_PRIVATE_KEY.startsWith('0x')}, Length: ${process.env.TREASURY_PRIVATE_KEY.length}` : 'N/A');
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    
-    // Validate input
     if (!recipient) {
-      return NextResponse.json(
-        { error: 'Recipient address is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Recipient address is required' }, { status: 400 });
     }
-
-    // BYPASS ALL TEST MODE CHECKS - FORCE PRODUCTION MODE
-    console.log('FORCING PRODUCTION MODE NOW - SENDING REAL TRANSACTION');
     
-    // Skip test mode entirely and go straight to production
-    if (false) {
-      // Simulate sending in test mode
-      console.log('Running in TEST MODE - simulating transaction');
-      
-      // Generate a fake transaction hash
-      const mockTxHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+    console.log('SENDING REAL TRANSACTION - PRODUCTION MODE');
+    
+    // Try the standard approach first
+    try {
+      console.log('Trying standard approach first...');
+      const { transactionHash } = await sendReward(recipient);
       
       return NextResponse.json({
         success: true,
-        transactionHash: mockTxHash,
-        message: `TEST MODE: Simulated sending 0.002 USDC to ${recipient}`,
-        testMode: true
+        transactionHash,
+        message: `Successfully sent 0.002 USDC to ${recipient}`,
       });
-    } else {
-      // Production mode - actually send the transaction
-      console.log('Running in PRODUCTION MODE - sending real transaction');
-      
+    } catch (error: any) {
+      console.error('Standard approach failed:', error);
+
+      // Try the direct RPC approach as a fallback
       try {
-        // Send the reward using our contract
-        const { transactionHash } = await sendReward(recipient);
-        
+        console.log('Trying direct RPC approach...');
+        const { txHash } = await simpleSendReward(recipient);
+
         return NextResponse.json({
           success: true,
-          transactionHash: transactionHash,
-          message: `Successfully sent 0.002 USDC to ${recipient}`,
-          testMode: false
+          transactionHash: txHash,
+          message: `Successfully sent 0.002 USDC to ${recipient} (direct RPC method)`,
         });
-      } catch (contractError: any) {
-        console.error('Contract error:', contractError);
-        console.error('Error details:', JSON.stringify(contractError, null, 2));
-        
-        // Log specific information about the error to help debug
-        const errorInfo = {
-          message: contractError.message,
-          code: contractError.code,
-          reason: contractError.reason,
-          data: contractError.data,
-          stack: contractError.stack?.split('\n').slice(0, 3).join('\n')
-        };
-        console.error('Detailed error info:', errorInfo);
-        
-        // Check if it's an RPC error
-        if (contractError.message?.includes('missing response') || 
-            contractError.message?.includes('SERVER_ERROR')) {
-          console.error('RPC CONNECTION ERROR: The Base RPC endpoint is not responding properly');
-        }
-        
-        // Fallback to test mode if contract call fails
-        console.log('Contract call failed, falling back to test mode');
+      } catch (directError: any) {
+        console.error('Direct RPC approach also failed:', directError);
+
+        // Fallback to test mode if both approaches fail
+        console.log('All approaches failed, falling back to test mode');
         const mockTxHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-        
+
         return NextResponse.json({
           success: true,
           transactionHash: mockTxHash,
           message: `FALLBACK MODE: Simulated sending 0.002 USDC to ${recipient}`,
           testMode: true,
           fallback: true,
-          error: contractError.message,
-          errorDetails: errorInfo
+          error: directError.message || error.message,
+          errorDetails: {
+            message: directError.message || error.message,
+            code: directError.code || error.code,
+            reason: directError.reason || error.reason,
+            data: directError.data || error.data,
+            stack: (directError.stack || error.stack)?.split('\n').slice(0, 3).join('\n')
+          }
         });
       }
     }
-    
   } catch (error: any) {
-    console.error('Error sending USDC reward:', error);
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'An error occurred while sending the reward'
-      },
-      { status: 500 }
-    );
+    console.error('Error processing request:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
