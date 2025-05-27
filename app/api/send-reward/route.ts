@@ -107,8 +107,13 @@ async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
   });
   
   const gasPriceData = await gasPriceResponse.json();
-  const gasPrice = gasPriceData.result;
-  console.log('Gas price:', gasPrice);
+  // Increase gas price by 10% to avoid replacement transaction underpriced errors
+  const baseGasPrice = gasPriceData.result;
+  const gasPriceInt = parseInt(baseGasPrice, 16);
+  const increasedGasPrice = Math.floor(gasPriceInt * 1.1); // 10% increase
+  const gasPrice = '0x' + increasedGasPrice.toString(16);
+  console.log('Base gas price:', baseGasPrice);
+  console.log('Increased gas price (10%):', gasPrice);
   
   // Create transaction object
   const tx = {
