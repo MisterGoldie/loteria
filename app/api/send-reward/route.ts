@@ -74,8 +74,8 @@ async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
   const data = iface.encodeFunctionData('sendReward', [recipientAddress]);
   console.log('Encoded function data:', data);
   
-  // Get the current nonce for the wallet
-  const nonceResponse = await fetch(ALCHEMY_RPC, {
+  // Get both pending and latest nonce to handle potential pending transactions
+  const pendingNonceResponse = await fetch(ALCHEMY_RPC, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -84,13 +84,34 @@ async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
       jsonrpc: '2.0',
       id: 1,
       method: 'eth_getTransactionCount',
+      params: [wallet.address, 'pending'],
+    }),
+  });
+  
+  const latestNonceResponse = await fetch(ALCHEMY_RPC, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'eth_getTransactionCount',
       params: [wallet.address, 'latest'],
     }),
   });
   
-  const nonceData = await nonceResponse.json();
-  const nonce = parseInt(nonceData.result, 16);
-  console.log('Current nonce:', nonce);
+  const pendingNonceData = await pendingNonceResponse.json();
+  const latestNonceData = await latestNonceResponse.json();
+  
+  const pendingNonce = parseInt(pendingNonceData.result, 16);
+  const latestNonce = parseInt(latestNonceData.result, 16);
+  
+  // Use the higher of the two nonces to avoid collisions
+  const nonce = Math.max(pendingNonce, latestNonce);
+  console.log('Latest nonce:', latestNonce);
+  console.log('Pending nonce:', pendingNonce);
+  console.log('Using nonce:', nonce);
   
   // Get gas price
   const gasPriceResponse = await fetch(ALCHEMY_RPC, {
@@ -100,22 +121,18 @@ async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
     },
     body: JSON.stringify({
       jsonrpc: '2.0',
-      id: 2,
+      id: 3,
       method: 'eth_gasPrice',
       params: [],
     }),
   });
   
   const gasPriceData = await gasPriceResponse.json();
-  // Increase gas price by 10% to avoid replacement transaction underpriced errors
-  const baseGasPrice = gasPriceData.result;
-  const gasPriceInt = parseInt(baseGasPrice, 16);
-  const increasedGasPrice = Math.floor(gasPriceInt * 1.1); // 10% increase
-  const gasPrice = '0x' + increasedGasPrice.toString(16);
-  console.log('Base gas price:', baseGasPrice);
-  console.log('Increased gas price (10%):', gasPrice);
+  // Use the standard gas price from the network
+  const gasPrice = gasPriceData.result;
+  console.log('Using network gas price:', gasPrice);
   
-  // Create transaction object
+  // Create transaction object with high gas price
   const tx = {
     to: LOTERIA_REWARDS_CONTRACT,
     nonce: nonce,
