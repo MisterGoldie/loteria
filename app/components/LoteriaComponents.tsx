@@ -177,16 +177,22 @@ export function LoteriaGame() {
     setTransactionHash(null);
     
     try {
-      // Call the API to send the reward, passing isMobile flag
+      // Call the API to send the reward, passing isMobile flag and cache-busting parameter
       console.log('Calling API with recipient:', address);
-      const response = await fetch('/api/send-reward', {
+      // Add cache-busting timestamp to prevent Farcaster mini-app caching issues
+      const cacheBuster = Date.now();
+      const response = await fetch(`/api/send-reward?_=${cacheBuster}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Add cache control headers on the request
+          'Cache-Control': 'no-cache, no-store',
+          'Pragma': 'no-cache',
         },
         body: JSON.stringify({
           recipient: address,
           isMobile: isMobileDevice(), // Pass mobile detection to API
+          timestamp: cacheBuster, // Also include in body for POST requests
         }),
       });
       

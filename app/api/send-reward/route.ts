@@ -242,7 +242,14 @@ export async function POST(request: Request) {
         rpcEndpoints: RPC_ENDPOINTS,
       };
       
-      return NextResponse.json(response);
+      return NextResponse.json(response, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Surrogate-Control': 'no-store'
+        }
+      });
     } catch (error: any) {
       console.error('Transaction failed:', error);
       console.error('Detailed error info:', {
@@ -272,7 +279,7 @@ export async function POST(request: Request) {
           const txHash = result.txHash;
           const verified = result.verified || false;
           
-          return NextResponse.json({
+          const retryResponse = {
             success: true,
             transactionHash: txHash,
             message: `Successfully sent 0.002 USDC to ${recipient} (retry succeeded)`,
@@ -280,6 +287,15 @@ export async function POST(request: Request) {
             blockExplorerUrl: `https://basescan.org/tx/${txHash}`,
             retried: true,
             timestamp: Date.now(),
+          };
+          
+          return NextResponse.json(retryResponse, {
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              'Surrogate-Control': 'no-store'
+            }
           });
         } catch (retryError) {
           console.error('Retry also failed:', retryError);
@@ -291,7 +307,7 @@ export async function POST(request: Request) {
       console.log('Contract call failed, falling back to test mode');
       const mockTxHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
       
-      return NextResponse.json({
+      const fallbackResponse = {
         success: true,
         transactionHash: mockTxHash,
         message: `FALLBACK MODE: Simulated sending 0.002 USDC to ${recipient}`,
@@ -305,10 +321,27 @@ export async function POST(request: Request) {
           data: error.data
         },
         timestamp: Date.now(),
+      };
+      
+      return NextResponse.json(fallbackResponse, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Surrogate-Control': 'no-store'
+        }
       });
     }
   } catch (error: any) {
     console.error('Error processing request:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { 
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
+    });
   }
 }
