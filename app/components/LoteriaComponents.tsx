@@ -96,18 +96,6 @@ export function LoteriaGame() {
     
     // Draw the first card
     drawNextCard();
-    
-    // Try to send a notification, but don't block if it fails
-    try {
-      sendNotification({
-        title: "Game Started",
-        body: "Your Loteria game has begun!",
-      }).catch(error => {
-        console.log('Game start notification failed, but game continues:', error);
-      });
-    } catch (error) {
-      console.log('Error sending game start notification, but game continues:', error);
-    }
   };
 
   // Draw the next card
@@ -123,18 +111,6 @@ export function LoteriaGame() {
     // Set the current card and update remaining cards
     setCurrentCard(nextCard);
     setRemainingCards(remainingCards.filter((_, index) => index !== randomIndex));
-    
-    // Try to send a notification, but don't block if it fails
-    try {
-      sendNotification({
-        title: "New Card Drawn",
-        body: `${nextCard.name} has been drawn!`,
-      }).catch(error => {
-        console.log('Notification failed, but game continues:', error);
-      });
-    } catch (error) {
-      console.log('Error sending notification, but game continues:', error);
-    }
   };
 
   // Constants for the USDC reward
@@ -193,9 +169,12 @@ export function LoteriaGame() {
         
         // Show simple success notification with the transaction hash (safely)
         try {
+          // Log the transaction hash for debugging
+          console.log('Transaction hash for notification:', data.transactionHash);
+          
           sendNotification({
             title: "USDC Reward Received!",
-            body: `You've received ${REWARD_AMOUNT} USDC as a reward! ${data.transactionHash ? `Tx: ${data.transactionHash.slice(0, 10)}...` : ''}`,
+            body: `You've received ${REWARD_AMOUNT} USDC as a reward!`,
           }).catch(err => console.log('Success notification failed, but reward was sent:', err));
         } catch (notifyError) {
           console.log('Error showing success notification, but reward was sent:', notifyError);
