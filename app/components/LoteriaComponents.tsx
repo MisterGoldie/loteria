@@ -8,6 +8,13 @@ import { parseUnits, encodeFunctionData } from 'viem';
 import { sdk } from '@farcaster/frame-sdk';
 import Link from 'next/link';
 
+// Helper function to detect mobile devices
+function isMobileDevice() {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         (window.innerWidth <= 768);
+}
+
 // Card component since it's not exported from DemoComponents
 type CardProps = {
   title?: string;
@@ -145,13 +152,14 @@ export function LoteriaGame() {
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // USDC on Base
   const REWARD_AMOUNT = '0.002'; // 0.002 USDC (6 decimals = 2000 units)
   
-  // Send reward to the winner using our thirdweb-powered API endpoint
+  // Send USDC reward to the player
   const sendReward = useCallback(async () => {
     if (!address || rewardSent) return;
     
     console.log('sendReward function called');
     console.log('address:', address);
     console.log('rewardSent:', rewardSent);
+    console.log('Is mobile device:', isMobileDevice() ? 'Yes' : 'No');
     
     // Show notification and prepare to call API
     console.log('Showing notification and preparing to call API');
@@ -169,7 +177,7 @@ export function LoteriaGame() {
     setTransactionHash(null);
     
     try {
-      // Call the API to send the reward
+      // Call the API to send the reward, passing isMobile flag
       console.log('Calling API with recipient:', address);
       const response = await fetch('/api/send-reward', {
         method: 'POST',
@@ -178,6 +186,7 @@ export function LoteriaGame() {
         },
         body: JSON.stringify({
           recipient: address,
+          isMobile: isMobileDevice(), // Pass mobile detection to API
         }),
       });
       
@@ -195,13 +204,32 @@ export function LoteriaGame() {
         setRewardSent(true);
         setTransactionHash(data.transactionHash || null);
         
-        // Show simple success notification with the transaction hash (safely)
+        // For mobile devices, try to verify the transaction status
+        if (isMobileDevice() && data.transactionHash) {
+          console.log('Mobile device detected, verifying transaction status...');
+          
+          // If we're on mobile and transaction verification failed, show a special message
+          if (data.verified === false) {
+            console.log('Transaction submitted but not yet verified on blockchain');
+            try {
+              sendNotification({
+                title: "USDC Reward Processing",
+                body: `Transaction submitted! It may take a minute to appear on BaseScan.`,
+              }).catch(err => console.log('Verification notification failed:', err));
+            } catch (notifyError) {
+              console.log('Error showing verification notification:', notifyError);
+            }
+          }
+        }
+        
+        // Show success notification with the transaction hash (safely)
         try {
           sendNotification({
             title: "USDC Reward Received!",
             body: `You've received ${REWARD_AMOUNT} USDC as a reward! ${data.transactionHash ? `Tx: ${data.transactionHash.slice(0, 10)}...` : ''}`,
           }).catch(err => console.log('Success notification failed, but reward was sent:', err));
         } catch (notifyError) {
+          console.log('Error showing success notification:', notifyError);
           console.log('Error showing success notification, but reward was sent:', notifyError);
         }
       } else {

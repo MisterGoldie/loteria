@@ -11,15 +11,22 @@ const LOTERIA_REWARDS_CONTRACT = '0x6A27A08A1c43B995E483C9304a992B8dDDB7D41c';
 // FORCE PRODUCTION MODE - Override all test mode settings
 const TEST_MODE = false;
 
-// Base chain definition with Alchemy RPC URL
+// Multiple RPC endpoints for better reliability, especially on mobile
+const RPC_ENDPOINTS = [
+  'https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS', // Primary Alchemy endpoint
+  'https://mainnet.base.org', // Base public endpoint
+  'https://base.llamarpc.com', // LlamaRPC endpoint
+  'https://base.meowrpc.com' // MeowRPC endpoint
+];
+
+// Use Alchemy as primary but try others if it fails
+const PRIMARY_RPC = RPC_ENDPOINTS[0];
+
+// Base chain definition with multiple RPC URLs
 const BASE_CHAIN = {
   ...Base,
-  // Use Alchemy RPC endpoint with user's API key
-  rpc: ["https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS"],
+  rpc: RPC_ENDPOINTS,
 };
-
-// Alchemy RPC endpoint - the only one that consistently works
-const ALCHEMY_RPC = 'https://base-mainnet.g.alchemy.com/v2/xBs03SyJ4JLapNFeWATlS';
 
 // ABI for our LoteriaRewards contract - only need the sendReward function
 const LOTERIA_REWARDS_ABI = [
@@ -48,7 +55,13 @@ const LOTERIA_REWARDS_ABI = [
  * Direct RPC implementation for sending rewards via blockchain transaction
  * This approach has been proven to work reliably in production
  */
-async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
+// Define return type to include verified property
+type SendRewardResult = {
+  txHash: string;
+  verified?: boolean;
+};
+
+async function sendReward(recipientAddress: string): Promise<SendRewardResult> {
   // Verify we have a private key
   if (!process.env.TREASURY_PRIVATE_KEY) {
     throw new Error('Treasury private key not configured');
@@ -74,35 +87,51 @@ async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
   const data = iface.encodeFunctionData('sendReward', [recipientAddress]);
   console.log('Encoded function data:', data);
   
+  // Function to make RPC call with fallback to other endpoints
+  async function makeRpcCall(method: string, params: any[], id: number = 1): Promise<any> {
+    // Try each RPC endpoint until one works
+    let lastError: Error | null = null;
+    
+    for (const rpcUrl of RPC_ENDPOINTS) {
+      try {
+        const response = await fetch(rpcUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id,
+            method,
+            params,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(`RPC error: ${data.error.message || JSON.stringify(data.error)}`);
+        }
+        
+        return data;
+      } catch (error) {
+        console.warn(`RPC call to ${rpcUrl} failed:`, error);
+        lastError = error instanceof Error ? error : new Error(String(error));
+        // Continue to next RPC endpoint
+      }
+    }
+    
+    // If we get here, all RPC endpoints failed
+    throw new Error(`All RPC endpoints failed. Last error: ${lastError?.message || 'Unknown error'}`);
+  }
+  
   // Get both pending and latest nonce to handle potential pending transactions
-  const pendingNonceResponse = await fetch(ALCHEMY_RPC, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'eth_getTransactionCount',
-      params: [wallet.address, 'pending'],
-    }),
-  });
-  
-  const latestNonceResponse = await fetch(ALCHEMY_RPC, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'eth_getTransactionCount',
-      params: [wallet.address, 'latest'],
-    }),
-  });
-  
-  const pendingNonceData = await pendingNonceResponse.json();
-  const latestNonceData = await latestNonceResponse.json();
+  console.log('Getting transaction count...');
+  const pendingNonceData = await makeRpcCall('eth_getTransactionCount', [wallet.address, 'pending'], 1);
+  const latestNonceData = await makeRpcCall('eth_getTransactionCount', [wallet.address, 'latest'], 2);
   
   const pendingNonce = parseInt(pendingNonceData.result, 16);
   const latestNonce = parseInt(latestNonceData.result, 16);
@@ -113,30 +142,24 @@ async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
   console.log('Pending nonce:', pendingNonce);
   console.log('Using nonce:', nonce);
   
-  // Get gas price
-  const gasPriceResponse = await fetch(ALCHEMY_RPC, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 3,
-      method: 'eth_gasPrice',
-      params: [],
-    }),
-  });
+  // Get gas price - slightly increase for mobile to ensure faster indexing
+  console.log('Getting gas price...');
+  const gasPriceData = await makeRpcCall('eth_gasPrice', [], 3);
   
-  const gasPriceData = await gasPriceResponse.json();
-  // Use the standard gas price from the network
-  const gasPrice = gasPriceData.result;
-  console.log('Using network gas price:', gasPrice);
+  // Increase gas price by 20% for mobile to ensure faster indexing
+  const baseGasPrice = gasPriceData.result;
+  const gasPriceInt = parseInt(baseGasPrice, 16);
+  const increasedGasPrice = Math.floor(gasPriceInt * 1.2); // 20% increase for better mobile indexing
+  const gasPrice = '0x' + increasedGasPrice.toString(16);
   
-  // Create transaction object with high gas price
+  console.log('Base gas price:', baseGasPrice);
+  console.log('Increased gas price for mobile (1.2x):', gasPrice);
+  
+  // Create transaction object with high gas limit for better mobile compatibility
   const tx = {
     to: LOTERIA_REWARDS_CONTRACT,
     nonce: nonce,
-    gasLimit: ethers.utils.hexlify(300000), // Set a high gas limit
+    gasLimit: ethers.utils.hexlify(400000), // Increased gas limit for better mobile compatibility
     gasPrice: gasPrice,
     data: data,
     chainId: BASE_CHAIN.chainId,
@@ -146,45 +169,46 @@ async function sendReward(recipientAddress: string): Promise<{txHash: string}> {
   console.log('Signing transaction...');
   const signedTx = await wallet.signTransaction(tx);
   
-  // Send the raw transaction
+  // Send the raw transaction through multiple RPCs for better reliability
   console.log('Sending raw transaction...');
-  const sendTxResponse = await fetch(ALCHEMY_RPC, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 3,
-      method: 'eth_sendRawTransaction',
-      params: [signedTx],
-    }),
-  });
-  
-  const sendTxData = await sendTxResponse.json();
-  console.log('Transaction response:', sendTxData);
-  
-  if (sendTxData.error) {
-    throw new Error(`RPC error: ${sendTxData.error.message || JSON.stringify(sendTxData.error)}`);
-  }
+  const sendTxData = await makeRpcCall('eth_sendRawTransaction', [signedTx], 4);
   
   const txHash = sendTxData.result;
   console.log('Transaction hash:', txHash);
   
-  return { txHash };
+  // Wait a short time to allow transaction to propagate to indexers
+  // This helps with mobile devices that check the tx status immediately
+  console.log('Waiting for transaction to propagate...');
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Verify transaction was received by checking its status on multiple RPCs
+  let txVerified = false;
+  try {
+    const txCheckData = await makeRpcCall('eth_getTransactionByHash', [txHash], 5);
+    if (txCheckData.result) {
+      txVerified = true;
+      console.log('Transaction verified on blockchain!');
+    }
+  } catch (error) {
+    console.warn('Transaction verification failed, but continuing:', error);
+    // Continue anyway as the tx might still be propagating
+  }
+  
+  return { txHash, verified: txVerified };
 }
 
 export async function POST(request: Request) {
   try {
     // Parse the request body
     const body = await request.json();
-    const { recipient } = body;
+    const { recipient, isMobile } = body;
     
     if (!recipient) {
       return NextResponse.json({ success: false, error: 'Recipient address is required' }, { status: 400 });
     }
     
     console.log('API endpoint called with recipient:', recipient);
+    console.log('Is mobile device?', isMobile ? 'Yes' : 'No');
     console.log('TREASURY_PRIVATE_KEY exists?', !!process.env.TREASURY_PRIVATE_KEY);
     
     // Check private key format without logging actual key
@@ -201,13 +225,24 @@ export async function POST(request: Request) {
     // Send the real transaction
     try {
       console.log('Running in PRODUCTION MODE - sending real transaction');
-      const { txHash } = await sendReward(recipient);
+      const result = await sendReward(recipient);
+      const txHash = result.txHash;
+      const verified = result.verified || false;
       
-      return NextResponse.json({
+      // For mobile devices, add extra information to help with transaction tracking
+      const response = {
         success: true,
         transactionHash: txHash,
         message: `Successfully sent 0.002 USDC to ${recipient}`,
-      });
+        verified: verified,
+        blockExplorerUrl: `https://basescan.org/tx/${txHash}`,
+        // Add timestamp to help with caching issues on mobile
+        timestamp: Date.now(),
+        // Add RPC endpoints for mobile clients to check transaction status
+        rpcEndpoints: RPC_ENDPOINTS,
+      };
+      
+      return NextResponse.json(response);
     } catch (error: any) {
       console.error('Transaction failed:', error);
       console.error('Detailed error info:', {
@@ -217,6 +252,40 @@ export async function POST(request: Request) {
         data: error.data,
         stack: error.stack?.split('\n').slice(0, 2).join('\n')
       });
+      
+      // Check if this is a known mobile-specific issue
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isMobileSpecificIssue = errorMessage.includes('timeout') || 
+                                   errorMessage.includes('network') ||
+                                   errorMessage.includes('rate limit');
+      
+      if (isMobile && isMobileSpecificIssue) {
+        console.log('Detected mobile-specific issue, using alternative approach');
+        
+        // For mobile-specific issues, try one more time with a different RPC
+        try {
+          // Wait a moment before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Try again with a different primary RPC
+          const result = await sendReward(recipient);
+          const txHash = result.txHash;
+          const verified = result.verified || false;
+          
+          return NextResponse.json({
+            success: true,
+            transactionHash: txHash,
+            message: `Successfully sent 0.002 USDC to ${recipient} (retry succeeded)`,
+            verified: verified || false,
+            blockExplorerUrl: `https://basescan.org/tx/${txHash}`,
+            retried: true,
+            timestamp: Date.now(),
+          });
+        } catch (retryError) {
+          console.error('Retry also failed:', retryError);
+          // Continue to fallback mode
+        }
+      }
       
       // Only fall back to test mode if the transaction failed
       console.log('Contract call failed, falling back to test mode');
@@ -234,7 +303,8 @@ export async function POST(request: Request) {
           code: error.code,
           reason: error.reason,
           data: error.data
-        }
+        },
+        timestamp: Date.now(),
       });
     }
   } catch (error: any) {
