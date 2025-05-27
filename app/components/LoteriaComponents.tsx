@@ -6,6 +6,7 @@ import { useNotification } from "@coinbase/onchainkit/minikit";
 import { useAccount } from 'wagmi';
 import { parseUnits, encodeFunctionData } from 'viem';
 import { sdk } from '@farcaster/frame-sdk';
+import Link from 'next/link';
 
 // Card component since it's not exported from DemoComponents
 type CardProps = {
@@ -76,6 +77,8 @@ export function LoteriaGame() {
   const [selectedCount, setSelectedCount] = useState(0);
   const [rewardSent, setRewardSent] = useState(false);
   const [hasWon, setHasWon] = useState(false);
+  const [isProcessingReward, setIsProcessingReward] = useState(false);
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
   
   const sendNotification = useNotification();
   const { address } = useAccount();
@@ -144,29 +147,29 @@ export function LoteriaGame() {
   
   // Send reward to the winner using our thirdweb-powered API endpoint
   const sendReward = useCallback(async () => {
+    if (!address || rewardSent) return;
+    
     console.log('sendReward function called');
     console.log('address:', address);
     console.log('rewardSent:', rewardSent);
     
-    if (!address || rewardSent) {
-      console.log('Early return - address missing or reward already sent');
-      return;
+    // Show notification and prepare to call API
+    console.log('Showing notification and preparing to call API');
+    try {
+      sendNotification({
+        title: "Processing Reward",
+        body: "Your USDC reward is being processed...",
+      }).catch(error => console.log('Processing notification failed, but continuing:', error));
+    } catch (error) {
+      console.log('Error showing processing notification, but continuing:', error);
     }
     
+    // Set processing state to show spinner
+    setIsProcessingReward(true);
+    setTransactionHash(null);
+    
     try {
-      // Show sending notification (safely)
-      console.log('Showing notification and preparing to call API');
-      try {
-        sendNotification({
-          title: "Processing Reward",
-          body: "Your USDC reward is being processed...",
-        }).catch(err => console.log('Processing notification failed, continuing anyway:', err));
-      } catch (notifyError) {
-        console.log('Error showing processing notification, continuing anyway:', notifyError);
-      }
-      
-      // Call our backend API to send the USDC reward from the treasury wallet
-      // This uses thirdweb on the backend to handle the transaction
+      // Call the API to send the reward
       console.log('Calling API with recipient:', address);
       const response = await fetch('/api/send-reward', {
         method: 'POST',
@@ -187,9 +190,10 @@ export function LoteriaGame() {
       }
       
       if (data.success) {
-        // Mark as sent
+        // Mark as sent and store transaction hash
         console.log('Setting rewardSent to true');
         setRewardSent(true);
+        setTransactionHash(data.transactionHash || null);
         
         // Show simple success notification with the transaction hash (safely)
         try {
@@ -217,6 +221,9 @@ export function LoteriaGame() {
       } catch (notifyError) {
         console.log('Error showing error notification:', notifyError);
       }
+    } finally {
+      // Always turn off processing state
+      setIsProcessingReward(false);
     }
   }, [address, rewardSent, sendNotification]);
 
@@ -329,13 +336,20 @@ export function LoteriaGame() {
             {hasWon && !rewardSent && address && (
               <div className="mt-4 border-t border-[#FFD700]/30 pt-4">
                 <div className="flex justify-center">
-                  <Button 
-                    variant="primary" 
-                    onClick={sendReward}
-                    className="bg-[#4CAF50] hover:bg-[#388E3C] text-white"
-                  >
-                    Claim Your Reward
-                  </Button>
+                  {isProcessingReward ? (
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4CAF50] mb-2"></div>
+                      <p className="text-white text-sm">Processing your reward...</p>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="primary" 
+                      onClick={sendReward}
+                      className="bg-[#4CAF50] hover:bg-[#388E3C] text-white"
+                    >
+                      Claim Your Reward
+                    </Button>
+                  )}
                 </div>
                 <p className="text-white text-xs text-center mt-2">
                   You won! Click to receive 0.2¢ worth of USDC as a reward.
@@ -345,10 +359,31 @@ export function LoteriaGame() {
             
             {/* Thank you message after reward is sent */}
             {hasWon && rewardSent && (
-              <div className="mt-4 border-t border-[#FFD700]/30 pt-4">
-                <p className="text-[#4CAF50] text-center font-bold">
-                  Reward claimed! Thank you for playing Loteria.
-                </p>
+              <div className="mt-4 border-t border-[#FFD700]/30 pt-4 flex justify-center">
+                <div className="bg-[#4CAF50]/20 rounded-lg p-4 w-full max-w-xs">
+                  <p className="text-[#4CAF50] text-center font-bold mb-2">
+                    Reward claimed! Thank you for playing Loteria.
+                  </p>
+                  
+                  {transactionHash && (
+                    <div className="mt-2 text-center">
+                      <p className="text-white text-xs mb-1">Transaction Hash:</p>
+                      <a 
+                        href={`https://basescan.org/tx/${transactionHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#FFD700] text-xs hover:underline break-all inline-block"
+                      >
+                        {transactionHash}
+                      </a>
+                      <p className="text-white text-xs mt-2">
+                        <span className="inline-block bg-[#FFD700]/20 text-[#FFD700] px-2 py-1 rounded text-xs">
+                          Click to view on BaseScan
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </Card>
